@@ -13,7 +13,7 @@ import Link from 'next/link';
 
 const TARGET_TEXT_COLOR = "#3D3D3D";
 const IFC_GREEN = "#98EE6F";
-const PHP_API_BASE_URL = "http://achados-perdidos.infinityfreeapp.com/php_api/endpoints";
+const PHP_API_BASE_URL = "https://achados-perdidos.infinityfreeapp.com/php_api/endpoints";
 
 function EditDataPageComponent() {
   const router = useRouter();

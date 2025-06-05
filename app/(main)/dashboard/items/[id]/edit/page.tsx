@@ -19,8 +19,10 @@ import { format, addMonths, isValid, parseISO } from 'date-fns';
 import { useAuth } from "@/app/(main)/MainLayoutClient";
 import { Loader2, ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
 
-// Constantes
-const PHP_API_BASE_URL = "http://achados-perdidos.infinityfreeapp.com/php_api";
+// !!! IMPORTANTE PARA TESTE EM DISPOSITIVOS MÓVEIS NA MESMA REDE !!!
+// Descomente a linha abaixo e substitua pelo IP da sua máquina.
+// const PHP_API_BASE_URL = "http://192.168.1.10/php_api"; 
+const PHP_API_BASE_URL = "https://achados-perdidos.infinityfreeapp.com/php_api"; // URL de produção
 const UPLOADS_BASE_URL = `${PHP_API_BASE_URL}/uploads/`;
 const TARGET_TEXT_COLOR = "#3D3D3D";
 

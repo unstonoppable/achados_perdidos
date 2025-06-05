@@ -104,7 +104,7 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
   // Log para verificar os valores usados para permissão
   console.log("DashboardPageContent - Auth State Utilizado (do hook):", { loggedInUserId, isAdmin });
 
-  const baseUrl = "http://achados-perdidos.infinityfreeapp.com/php_api/uploads/"; // URL base atualizada
+  const baseUrl = "https://achados-perdidos.infinityfreeapp.com/php_api/uploads/"; // URL base atualizada
 
   useEffect(() => {
     const newCategoryFromUrl = searchParams.get('category') || "todos";
@@ -141,7 +141,7 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
         params.append("search", searchTerm.trim());
       }
       const queryString = params.toString();
-      const apiUrl = `http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php${queryString ? '?' + queryString : ''}`; // URL da API atualizada
+      const apiUrl = `https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php${queryString ? '?' + queryString : ''}`; // URL da API atualizada
 
       try {
         const response = await fetch(apiUrl, {
@@ -189,7 +189,7 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
     if (itemToDeleteId === null) return;
 
     try {
-      const response = await fetch(`http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php?id=${itemToDeleteId}`, { // URL da API atualizada
+      const response = await fetch(`https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php?id=${itemToDeleteId}`, { // URL da API atualizada
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

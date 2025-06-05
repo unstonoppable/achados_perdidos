@@ -105,9 +105,13 @@ const getStatusPresentation = (status: ItemDetails['status']) => {
   };
 };
 
-const baseUrl = "http://achados-perdidos.infinityfreeapp.com/php_api/uploads/";
-const PHP_API_URL_ITEMS = "http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php";
-const PHP_API_URL_USER_SEARCH = "http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/user/search-users.php";
+const IFC_GRAY_STATUS = "#676767";
+const DEFAULT_STATUS_COLOR = "#3B82F6"; // Azul para Reivindicado
+const TEXT_WHITE = "#FFFFFF";
+
+const baseUrl = "https://achados-perdidos.infinityfreeapp.com/php_api/uploads/";
+const PHP_API_URL_ITEMS = "https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php";
+const PHP_API_URL_USER_SEARCH = "https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/user/search-users.php";
 
 // Função de debounce
 function debounce<P extends unknown[], R>(func: (...args: P) => R, waitFor: number) {

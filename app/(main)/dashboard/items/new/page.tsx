@@ -171,7 +171,7 @@ function NewItemPageComponent() {
 
     try {
       const response = await fetch(
-        "http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php",
+        "https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php",
         {
           method: "POST",
           credentials: "include",

@@ -100,7 +100,7 @@ export const useAuth = () => {
     const handleUserDataChange = async () => {
       if (isGuestView) return; // Não busca dados se for visitante
       try {
-        const response = await fetch('http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/user/get-user-data.php', {
+        const response = await fetch('https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/user/get-user-data.php', {
           method: 'GET',
           credentials: 'include',
           headers: {
@@ -308,7 +308,7 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
               <Button variant="ghost" className="p-0 rounded-full h-10 w-10">
                 {userPhotoUrl ? (
                   <Image 
-                    src={userPhotoUrl ? `http://achados-perdidos.infinityfreeapp.com/php_api/uploads/${userPhotoUrl}` : "/user-placeholder.png"}
+                    src={userPhotoUrl ? `https://achados-perdidos.infinityfreeapp.com/php_api/uploads/${userPhotoUrl}` : "/user-placeholder.png"}
                     alt={userName || 'Foto de perfil'}
                     width={40}
                     height={40} 
@@ -386,7 +386,7 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
                 >
                   {userPhotoUrl ? (
                     <Image 
-                      src={userPhotoUrl ? `http://achados-perdidos.infinityfreeapp.com/php_api/uploads/${userPhotoUrl}` : "/user-placeholder.png"}
+                      src={userPhotoUrl ? `https://achados-perdidos.infinityfreeapp.com/php_api/uploads/${userPhotoUrl}` : "/user-placeholder.png"}
                       alt={userName || 'Foto de perfil'}
                       width={44} 
                       height={44} 

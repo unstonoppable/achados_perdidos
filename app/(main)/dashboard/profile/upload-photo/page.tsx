@@ -69,7 +69,7 @@ function UploadPhotoForm() {
         const token = document.cookie.split('; ').find(row => row.startsWith('session_token='))?.split('=')[1];
 
         try {
-            const response = await fetch('http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/upload_photo.php', {
+            const response = await fetch('https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/upload_photo.php', {
                 method: 'POST',
                 body: formData,
                 headers: {

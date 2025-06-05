@@ -21,7 +21,7 @@ import { Loader2 } from "lucide-react"
 // !!! IMPORTANTE PARA TESTE EM DISPOSITIVOS MÓVEIS NA MESMA REDE !!!
 // Descomente a linha abaixo e substitua pelo IP da sua máquina.
 // const API_BASE_URL = "http://192.168.1.10/php_api"; 
-const API_BASE_URL = "http://achados-perdidos.infinityfreeapp.com/php_api"; // URL de produção
+const API_BASE_URL = "https://achados-perdidos.infinityfreeapp.com/php_api"; // URL de produção
 
 // Componente principal da página de registro
 export default function RegisterPage() {

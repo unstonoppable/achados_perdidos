@@ -108,7 +108,7 @@ function ItemsPageComponent() {
       setError(null);
       try {
         const response = await fetch(
-          "http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php",
+          "https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php",
           {
             method: "GET",
             headers: {
@@ -221,7 +221,7 @@ function ItemsPageComponent() {
                 <div className="relative w-full aspect-video bg-gray-100 dark:bg-zinc-700">
                   {item.foto_item_url && !item.imageError ? (
                     <Image 
-                        src={`http://achados-perdidos.infinityfreeapp.com/php_api/uploads/${item.foto_item_url}`}
+                        src={`https://achados-perdidos.infinityfreeapp.com/php_api/uploads/${item.foto_item_url}`}
                         alt={`Foto de ${item.nome_item}`} 
                         layout="fill"
                         objectFit="contain" 
