@@ -1,14 +1,19 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "node_api/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api"
+      "destination": "/node_api/index.js"
     }
-  ],
-  "functions": {
-    "api/index.js": {
-      "memory": 1024
-    }
-  }
+  ]
 } 
