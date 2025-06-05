@@ -3,6 +3,10 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useCallback, Suspense } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ArrowLeft, UploadCloud, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image'; // Para preview da imagem
@@ -13,188 +17,195 @@ const TARGET_TEXT_COLOR = "#3D3D3D";
 const IFC_GREEN = "#98EE6F";
 const PHP_API_BASE_URL = "http://achados-perdidos.infinityfreeapp.com/php_api/endpoints";
 
-function UploadPhotoPageComponent() {
-  const router = useRouter();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+// Componente para o formulário de upload, para poder ser envolvido por Suspense
+function UploadPhotoForm() {
+    const router = useRouter();
+    const [file, setFile] = useState<File | null>(null);
+    const [preview, setPreview] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles && acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] },
-    multiple: false,
-  });
-
-  const handleRemovePreview = () => {
-    setSelectedFile(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setPreviewUrl(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      // Adicionar feedback (ex: toast)
-      console.warn("Nenhum arquivo selecionado.");
-      setMessage({type: 'error', text: "Nenhum arquivo selecionado. Por favor, escolha uma imagem."}) 
-      return;
-    }
-    setIsUploading(true);
-    setMessage(null);
-
-    const formData = new FormData();
-    formData.append('profileImage', selectedFile);
-
-    console.log("Enviando imagem para o backend:", selectedFile.name);
-
-    try {
-      // Substitua pelo seu endpoint real
-      const response = await fetch(`${PHP_API_BASE_URL}/profile/upload-photo.php`, { 
-        method: 'POST',
-        // Headers de 'Content-Type' são definidos automaticamente pelo browser ao usar FormData
-        // Inclua headers de autenticação se necessário
-        credentials: 'include',
-        body: formData,
-      });
-
-      if (response.ok) { // Use isso com uma API real
-        const result = await response.json(); // Se o backend retornar JSON
-        if (result.success && result.filePath) { // Para API Real
-          setMessage({type: 'success', text: result.message || "Foto de perfil atualizada com sucesso!"});
-          if (typeof window !== "undefined") {
-            localStorage.setItem("userPhotoUrl", result.filePath);
-            window.dispatchEvent(new CustomEvent('userDataChanged'));
-          }
-          handleRemovePreview();
-          router.push('/dashboard');
-        } else {
-          setMessage({type: 'error', text: result.message || "Falha ao processar a resposta do servidor."});
+    const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
+        setError(null);
+        if (fileRejections.length > 0) {
+            const firstError = fileRejections[0].errors[0];
+            if (firstError.code === 'file-too-large') {
+                setError("O arquivo é muito grande. O tamanho máximo é 2MB.");
+            } else if (firstError.code === 'file-invalid-type') {
+                setError("Tipo de arquivo inválido. Apenas JPG, JPEG, e PNG são permitidos.");
+            } else {
+                setError(firstError.message);
+            }
+            return;
         }
 
-        // Bloco de simulação (MANTENHA OU SUBSTITUA PELO DE CIMA PARA API REAL)
-        // const simulatedFilePath = 'uploads/profile_pictures/user_' + Date.now() + '.jpg'; // Simula um novo path único
-        // setMessage({type: 'success', text: "Foto de perfil atualizada com sucesso! (Simulado)"});
-        // if (typeof window !== "undefined") {
-        //   localStorage.setItem("userPhotoUrl", simulatedFilePath);
-        //    // Opcional: Forçar atualização do layout se necessário, ou deixar que o useAuth pegue na próxima vez.
-        //    // Poderia disparar um evento para o layout escutar, ou usar um estado global.
-        //    // Exemplo simples para forçar useAuth a recarregar da localStorage na próxima navegação:
-        //    // router.refresh(); // Se estiver usando Next.js App Router e quiser apenas revalidar dados do servidor
-        // }
-        // handleRemovePreview(); // Limpar preview após upload
-        // FIM DO BLOCO DE SIMULAÇÃO
+        if (acceptedFiles[0]) {
+            const selectedFile = acceptedFiles[0];
+            setFile(selectedFile);
+            setPreview(URL.createObjectURL(selectedFile));
+        }
+    }, []);
 
-      } else {
-        // Tentar ler o corpo do erro se não for OK, mas for JSON
-        let errorMessage = "Falha ao enviar a foto. O servidor respondeu com status " + response.status;
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: { 'image/jpeg': [], 'image/png': [] },
+        maxSize: 2 * 1024 * 1024, // 2MB
+        multiple: false,
+    });
+
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!file) {
+            setError("Por favor, selecione um arquivo de imagem.");
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setSuccess(null);
+
+        const formData = new FormData();
+        formData.append('profile_image', file);
+        
+        // Incluir o token de sessão na requisição
+        const token = document.cookie.split('; ').find(row => row.startsWith('session_token='))?.split('=')[1];
+
         try {
-            const errorResult = await response.json();
-            errorMessage = errorResult.message || errorMessage;
-        } catch {
-            // Não era JSON ou erro ao parsear, mantém a mensagem de status
+            const response = await fetch('http://achados-perdidos.infinityfreeapp.com/php_api/endpoints/upload_photo.php', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                },
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                setSuccess(result.message || "Foto de perfil atualizada com sucesso!");
+                // Opcional: atualizar a URL da imagem no localStorage
+                if (typeof window !== "undefined") {
+                    localStorage.setItem('userPhotoUrl', result.filePath);
+                    // Disparar evento para que o layout possa atualizar a foto
+                    window.dispatchEvent(new Event('userDataChanged'));
+                }
+                setTimeout(() => {
+                    router.push('/dashboard');
+                }, 2000);
+            } else {
+                setError(result.message || "Ocorreu um erro ao enviar a imagem.");
+            }
+        } catch (err) {
+            console.error("Erro na requisição de upload:", err);
+            setError("Erro de conexão. Não foi possível conectar ao servidor.");
+        } finally {
+            setIsLoading(false);
         }
-        setMessage({type: 'error', text: errorMessage});
-        // setMessage({type: 'error', text: "Falha ao enviar a foto. Tente novamente. (Simulado)"});
-      }
-    } catch (error) {
-      console.error("Erro ao enviar foto:", error);
-      setMessage({type: 'error', text: "Erro de conexão ao tentar enviar a foto."}) 
-    } finally {
-      setIsUploading(false);
-    }
-  };
+    };
+    
+    const handleRemovePreview = () => {
+        setFile(null);
+        if (preview) {
+            URL.revokeObjectURL(preview);
+        }
+        setPreview(null);
+    };
 
-  return (
-    <div className="w-full max-w-3xl mx-auto py-8 md:py-12 px-4">
-      <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm mb-6 hover:underline" style={{ color: TARGET_TEXT_COLOR }}>
-        <ArrowLeft size={16} />
-        Voltar ao Dashboard
-      </Link>
-      <div className="shadow-xl border-0 rounded-lg bg-white dark:bg-zinc-800">
-        <div className="p-6">
-          <h2 className="text-2xl font-bold" style={{ color: TARGET_TEXT_COLOR }}>
-            Alterar Foto de Perfil
-          </h2>
-          <p style={{ color: TARGET_TEXT_COLOR }}>
-            Escolha uma nova foto para seu perfil.
-          </p>
+    return (
+        <div className="w-full max-w-2xl mx-auto font-sans">
+             <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm mb-6 hover:underline" style={{ color: TARGET_TEXT_COLOR }}>
+                <ArrowLeft size={16} />
+                Voltar ao Dashboard
+            </Link>
+            <Card className="shadow-xl border-0 rounded-lg bg-white dark:bg-zinc-800">
+                <CardHeader className="p-6">
+                    <CardTitle className="text-2xl font-bold" style={{ color: TARGET_TEXT_COLOR }}>
+                        Alterar Foto de Perfil
+                    </CardTitle>
+                    <CardDescription className="text-md" style={{ color: TARGET_TEXT_COLOR }}>
+                        Escolha uma nova imagem para o seu perfil. A imagem deve ser JPG ou PNG e ter no máximo 2MB.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div 
+                            {...getRootProps()} 
+                            className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors duration-200 ease-in-out
+                                ${isDragActive ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-green-400 bg-gray-50/50'}
+                                dark:border-zinc-600 dark:hover:border-green-500 dark:bg-zinc-700/50 dark:hover:bg-zinc-700`}
+                        >
+                            <Input {...getInputProps()} />
+                            <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                <UploadCloud size={48} className="mb-4 opacity-70" />
+                                {isDragActive ? (
+                                    <p className="font-semibold text-lg" style={{ color: TARGET_TEXT_COLOR }}>Solte a imagem aqui...</p>
+                                ) : (
+                                    <div>
+                                        <p className="font-semibold text-lg" style={{ color: TARGET_TEXT_COLOR }}>
+                                            Arraste e solte uma imagem aqui
+                                        </p>
+                                        <p className="text-sm mt-1">ou <span className="text-green-600 font-medium">clique para selecionar</span></p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {preview && (
+                             <div className="mt-4 p-4 border rounded-lg bg-gray-50 dark:bg-zinc-700/50 relative">
+                                <p className="font-semibold text-sm mb-2" style={{ color: TARGET_TEXT_COLOR }}>Preview da Imagem:</p>
+                                <div className="relative w-32 h-32 rounded-full overflow-hidden mx-auto shadow-md">
+                                    <Image src={preview} alt="Pré-visualização" layout="fill" objectFit="cover" />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleRemovePreview}
+                                    className="absolute top-2 right-2 h-8 w-8 rounded-full bg-gray-800/50 hover:bg-gray-800/70 text-white"
+                                    aria-label="Remover imagem"
+                                >
+                                    <XCircle size={20} />
+                                </Button>
+                            </div>
+                        )}
+
+                        {error && <p className="text-red-600 dark:text-red-500 text-sm font-medium">{error}</p>}
+                        {success && <p className="text-green-600 dark:text-green-500 text-sm font-medium">{success}</p>}
+                        
+                        <div className="flex justify-end gap-4 pt-4">
+                             <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => router.back()}
+                                className="border-gray-300 dark:border-zinc-600"
+                                style={{ color: TARGET_TEXT_COLOR }}
+                                disabled={isLoading}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button 
+                                type="submit" 
+                                disabled={!file || isLoading} 
+                                style={{ backgroundColor: '#98EE6F', color: TARGET_TEXT_COLOR }}
+                                className="font-bold"
+                            >
+                                {isLoading ? 'Enviando...' : 'Salvar Nova Foto'}
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-6">
-            <div 
-              {...getRootProps()} 
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-                          ${isDragActive ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-300 dark:border-zinc-600 hover:border-gray-400 dark:hover:border-zinc-500'}
-                        `}
-            >
-              <input {...getInputProps()} />
-              <UploadCloud size={48} className="mx-auto mb-3" style={{ color: isDragActive ? IFC_GREEN : TARGET_TEXT_COLOR }} />
-              {isDragActive ? (
-                <p style={{ color: IFC_GREEN }}>Solte a imagem aqui!</p>
-              ) : (
-                <p style={{ color: TARGET_TEXT_COLOR }}>Arraste e solte uma imagem aqui, ou clique para selecionar.</p>
-              )}
-              <p className="text-xs mt-2" style={{ color: TARGET_TEXT_COLOR, opacity: 0.7}}>
-                (JPG, PNG, GIF - Máx 5MB)
-              </p>
-            </div>
-
-            {previewUrl && selectedFile && (
-              <div className="mt-6 text-center space-y-3">
-                <label style={{ color: TARGET_TEXT_COLOR }}>Pré-visualização:</label>
-                <div className="relative inline-block border rounded-lg overflow-hidden shadow-md w-48 h-48 mx-auto">
-                  <Image src={previewUrl} alt={`Preview de ${selectedFile.name}`} layout="fill" objectFit="cover" />
-                  <button
-                    type="button" 
-                    className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 rounded-full h-7 w-7 z-10 inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                    onClick={handleRemovePreview}
-                  >
-                    <XCircle size={20} className="text-white" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="p-6 border-t dark:border-zinc-700 flex flex-col items-start gap-4 md:flex-row md:justify-between md:items-center">
-            <button
-              type="submit" 
-              style={{ backgroundColor: IFC_GREEN, color: TARGET_TEXT_COLOR }}
-              className="font-semibold hover:opacity-90 transition-opacity min-w-[120px] inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-              disabled={!selectedFile || isUploading}
-            >
-              {isUploading ? (
-                <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-r-2 border-current mr-2"></div>Carregando...</>
-              ) : (
-                'Salvar Foto'
-              )}
-            </button>
-            {message && (
-              <p className={`text-sm font-medium ${message.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {message.text}
-              </p>
-            )}
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+    );
 }
 
+// O componente de página real que envolve o formulário com Suspense
 export default function UploadPhotoPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><p className="text-lg" style={{ color: "#3D3D3D" }}>Carregando página...</p></div>}>
-      <UploadPhotoPageComponent />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<div>Carregando...</div>}>
+            <UploadPhotoForm />
+        </Suspense>
+    );
 } 

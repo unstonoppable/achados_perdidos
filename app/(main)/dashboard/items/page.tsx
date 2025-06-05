@@ -2,8 +2,17 @@
 
 // export const dynamic = 'force-dynamic'; // Força a renderização dinâmica - TEMPORARIAMENTE REMOVIDO PARA TESTE
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import Image from "next/image";
 import { Box, ImageOff, PackageCheck, PackageSearch, CalendarClock } from "lucide-react"; // Adicionado CalendarClock
 
@@ -158,24 +167,24 @@ function ItemsPageComponent() {
 
   if (error) {
     return (
-      <div className="w-full max-w-md mx-auto mt-10 shadow-lg rounded-lg border bg-card text-card-foreground">
-        <div className="p-6">
-          <h2 className="text-2xl font-semibold leading-none tracking-tight text-destructive text-center">Erro ao Carregar Itens</h2>
-        </div>
-        <div className="p-6 pt-0 text-center">
+      <Card className="w-full max-w-md mx-auto mt-10 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-destructive text-center">Erro ao Carregar Itens</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
           <p>{error}</p>
-          <button
+          <Button 
             onClick={() => {
               if (typeof window !== 'undefined') {
                 window.location.reload();
               }
-            }}
-            className="mt-6 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            }} 
+            className="mt-6"
           >
             Tentar Novamente
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -188,27 +197,27 @@ function ItemsPageComponent() {
             Visualize todos os itens achados e perdidos no sistema.
           </p>
         </div>
-        <Link href="/dashboard/items/new">
-          <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8">Cadastrar Novo Item</button>
+        <Link href="/dashboard/items/new" passHref>
+          <Button size="lg">Cadastrar Novo Item</Button>
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <div className="shadow-lg rounded-lg border bg-card text-card-foreground">
-          <div className="p-6 pt-8 text-center">
+        <Card className="shadow-lg">
+          <CardContent className="pt-8 text-center">
             <Box size={48} className="mx-auto text-muted-foreground mb-4" />
             <p className="text-xl text-muted-foreground mb-2">Nenhum item cadastrado ainda.</p>
             <Link href="/dashboard/items/new" className="mt-2 inline-block">
-                <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2">Seja o primeiro a cadastrar!</button>
+                <Button variant="secondary">Seja o primeiro a cadastrar!</Button>
             </Link>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {items.map((item) => {
             const statusInfo = getStatusPresentation(item.status);
             return (
-              <div key={item.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-zinc-800 rounded-lg border">
+              <Card key={item.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-zinc-800">
                 <div className="relative w-full aspect-video bg-gray-100 dark:bg-zinc-700">
                   {item.foto_item_url && !item.imageError ? (
                     <Image 
@@ -227,9 +236,9 @@ function ItemsPageComponent() {
                     </div>
                   )}
                 </div>
-                <div className="pb-2 pt-4 px-4">
+                <CardHeader className="pb-2 pt-4 px-4">
                   <div className="flex justify-between items-start ">
-                      <h3 className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{item.nome_item}</h3>
+                      <CardTitle className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{item.nome_item}</CardTitle>
                       <div
                         className={`flex items-center text-xs font-medium rounded-full capitalize px-2 py-1`} // Ajustado padding
                         style={{ backgroundColor: statusInfo.itemBgColor, color: statusInfo.itemTextColor }}
@@ -238,14 +247,14 @@ function ItemsPageComponent() {
                           <span className="ml-1.5">{statusInfo.label}</span>
                       </div>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                  <CardDescription className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
                     Local: {item.local_encontrado || 'N/A'}
-                  </p>
-                   <p className="text-xs text-gray-500 dark:text-gray-400">
+                  </CardDescription>
+                   <CardDescription className="text-xs text-gray-500 dark:text-gray-400">
                     Encontrado em: {formatDate(item.data_encontrado)} {item.turno_encontrado && `(${item.turno_encontrado})`}
-                  </p>
-                </div>
-                <div className="flex-grow py-2 px-4">
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow py-2 px-4">
                   <p className="text-sm line-clamp-3 text-gray-600 dark:text-gray-300 mb-2">{item.descricao || "Nenhuma descrição fornecida."}</p>
                   <div className="text-xs space-y-0.5 text-gray-500 dark:text-gray-400">
                     <p>Cadastro: {formatDate(item.data_cadastro_item)}</p>
@@ -260,13 +269,13 @@ function ItemsPageComponent() {
                       </>
                     )}
                   </div>
-                </div>
-                <div className="flex justify-end items-center pt-3 pb-3 px-4 border-t border-gray-200 dark:border-zinc-700">
-                  <Link href={`/dashboard/items/${item.id}`}>
-                    <button className="dark:text-gray-300 dark:border-zinc-600 dark:hover:bg-zinc-700 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">Ver Detalhes</button>
+                </CardContent>
+                <CardFooter className="flex justify-end items-center pt-3 pb-3 px-4 border-t border-gray-200 dark:border-zinc-700">
+                  <Link href={`/dashboard/items/${item.id}`} passHref>
+                    <Button variant="outline" size="sm" className="dark:text-gray-300 dark:border-zinc-600 dark:hover:bg-zinc-700">Ver Detalhes</Button>
                   </Link>
-                </div>
-              </div>
+                </CardFooter>
+              </Card>
             );
           })}
         </div>
@@ -280,9 +289,5 @@ function ItemsPageComponent() {
 export default function ListItemsPage() {
   // Se useSearchParams for usado aqui, o Suspense deve envolver o JSX que depende dele.
   // Se ItemsPageComponent ou um filho dele usar useSearchParams, envolver ItemsPageComponent é o correto.
-  return (
-    <Suspense fallback={<div>Carregando informações da página...</div>}>
-      <ItemsPageComponent />
-    </Suspense>
-  );
+  return <ItemsPageComponent />;
 } 

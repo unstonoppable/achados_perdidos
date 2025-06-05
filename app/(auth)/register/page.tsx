@@ -9,124 +9,103 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 
 // !!! IMPORTANTE PARA TESTE EM DISPOSITIVOS MÓVEIS NA MESMA REDE !!!
-// Substitua 'localhost' pelo ENDEREÇO IP LOCAL do seu computador onde o XAMPP está rodando.
-// Exemplo: const API_BASE_URL = "http://192.168.1.100/projetos/achados_perdidos/php_api/endpoints";
-const API_BASE_URL = "http://achados-perdidos.infinityfreeapp.com"
+// Descomente a linha abaixo e substitua pelo IP da sua máquina.
+// const API_BASE_URL = "http://192.168.1.10/php_api"; 
+const API_BASE_URL = "http://achados-perdidos.infinityfreeapp.com/php_api"; // URL de produção
 
-// Cores (para consistência, poderiam vir de um arquivo de tema global)
-const IFC_GREEN = "#98EE6F";
-const IFC_GRAY = "#676767";
-const TEXT_WHITE = "#FFFFFF";
-const TEXT_DARK = "#333333"; // Cor principal para textos escuros
-const BACKGROUND_PAGE = "#F9FAFB"; // Um cinza muito claro para o fundo da página
-const SUCCESS_GREEN = "#10B981"; // Um verde para mensagens de sucesso
-const ERROR_RED = "#EF4444"; // Vermelho para erros
-
+// Componente principal da página de registro
 export default function RegisterPage() {
-  const router = useRouter()
+  // Estados para os campos do formulário
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [matricula, setMatricula] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [matricula, setMatricula] = useState("")
 
+  // Estados para controle de UI
+  const [error, setError] = useState<string | null>("")
+  const [success, setSuccess] = useState<string | null>("")
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+
+  // Função para lidar com o envio do formulário
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setIsLoading(true)
     setError(null)
-    setSuccessMessage(null)
+    setSuccess(null)
 
+    // Validação de senha
     if (password !== confirmPassword) {
       setError("As senhas não coincidem.")
+      setIsLoading(false)
       return
-    }
-    if (password.length < 6) { // Exemplo de validação de força da senha
-      setError("A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
-
-    setIsLoading(true)
-
-    const formData = {
-      nome: name,
-      email: email,
-      matricula: matricula,
-      senha: password,
-      confirmar_senha: confirmPassword,
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/php_api/endpoints/register.php`, {
+      const response = await fetch(`${API_BASE_URL}/endpoints/register.php`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: name,
+          email: email,
+          senha: password,
+          matricula: matricula,
+        }),
       })
 
       const data = await response.json()
 
-      if (response.ok && data.success && data.userData) {
-        const { id, nome, email: userEmail, tipo_usuario, foto_perfil_url, matricula: userMatricula } = data.userData;
-        
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userId", id);
-        localStorage.setItem("userName", nome);
-        localStorage.setItem("userEmail", userEmail);
-        localStorage.setItem("userType", tipo_usuario);
-        localStorage.setItem("userPhotoUrl", foto_perfil_url || "");
-        localStorage.setItem("userMatricula", userMatricula || "");
-        
-        window.dispatchEvent(new CustomEvent('userDataChanged'));
-
-        // Limpar campos do formulário (opcional, mas boa prática)
-        setName("")
-        setEmail("")
-        setMatricula("")
-        setPassword("")
-        setConfirmPassword("")
-        
-        router.push("/dashboard"); // Redireciona para o dashboard
+      if (data.success) {
+        setSuccess(data.message || "Cadastro realizado com sucesso! Redirecionando para o login...")
+        setTimeout(() => {
+          router.push("/login")
+        }, 2000)
       } else {
-        setError(data.message || "Falha no cadastro. Verifique os dados informados ou tente novamente.")
+        setError(data.message || "Ocorreu um erro no cadastro.")
       }
     } catch (err) {
-      console.error("Erro na requisição de cadastro:", err)
-      setError("Erro ao conectar ao servidor. Tente novamente mais tarde.")
+      console.error("Erro na requisição de registro:", err)
+      setError("Erro de conexão. Tente novamente mais tarde.")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-4 pt-8 sm:pt-4" style={{ backgroundColor: BACKGROUND_PAGE }}>
-      <div className="mb-4 sm:mb-6 text-center">
+    <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
+      <div className="hidden bg-muted lg:block">
         <Image
-          src="/logo.png"
-          alt="Logo Achados e Perdidos IFC"
-          width={150}
-          height={150}
-          className="mx-auto"
-          priority
+          src="/placeholder.svg" // Substitua pelo caminho da sua imagem
+          alt="Imagem de fundo"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
         />
       </div>
-      <div className={cn("w-full max-w-md")}>
-        <Card className="shadow-xl rounded-xl border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-          <CardContent className="p-6 sm:p-8">
+      <div className="flex items-center justify-center py-12">
+        <Card className={cn("mx-auto grid w-[350px] gap-6", "sm:w-[400px]")}>
+          <CardHeader>
+            <CardTitle className="text-3xl">Cadastro</CardTitle>
+            <CardDescription>
+              Crie sua conta para encontrar e cadastrar itens.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <form onSubmit={handleSubmit}>
-              <div className="grid gap-5">
-                <div className="grid gap-2.5">
-                  <Label htmlFor="name" className="text-sm font-medium" style={{ color: TEXT_DARK }}>Nome Completo</Label>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Nome Completo</Label>
                   <Input
                     id="name"
                     type="text"
@@ -134,99 +113,75 @@ export default function RegisterPage() {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    disabled={isLoading}
-                    className="h-11 rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 ease-in-out"
                   />
                 </div>
-                <div className="grid gap-2.5">
-                  <Label htmlFor="email" className="text-sm font-medium" style={{ color: TEXT_DARK }}>Email</Label>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="seu@email.com"
+                    placeholder="m@exemplo.com"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                    className="h-11 rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 ease-in-out"
                   />
                 </div>
-                <div className="grid gap-2.5">
-                  <Label htmlFor="matricula" className="text-sm font-medium" style={{ color: TEXT_DARK }}>Matrícula</Label>
+                <div className="grid gap-2">
+                  <Label htmlFor="matricula">Matrícula</Label>
                   <Input
                     id="matricula"
                     type="text"
-                    placeholder="Sua matrícula"
+                    placeholder="Sua Matrícula"
                     required
                     value={matricula}
                     onChange={(e) => setMatricula(e.target.value)}
-                    disabled={isLoading}
-                    className="h-11 rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 ease-in-out"
                   />
                 </div>
-                <div className="grid gap-2.5">
-                  <Label htmlFor="password" className="text-sm font-medium" style={{ color: TEXT_DARK }}>Senha</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Mínimo 6 caracteres"
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Senha</Label>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="••••••••"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    className="h-11 rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 ease-in-out"
                   />
                 </div>
-                <div className="grid gap-2.5">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium" style={{ color: TEXT_DARK }}>Confirmar Senha</Label>
-                  <Input
-                    id="confirmPassword"
+                <div className="grid gap-2">
+                  <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                  <Input 
+                    id="confirmPassword" 
                     type="password"
-                    placeholder="Repita a senha"
+                    placeholder="••••••••"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={isLoading}
-                    className="h-11 rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 ease-in-out"
                   />
                 </div>
-                {error && (
-                  <p className="text-sm font-medium p-3 rounded-md" style={{ color: TEXT_WHITE, backgroundColor: ERROR_RED }}>{error}</p>
-                )}
-                {successMessage && (
-                  <p className="text-sm font-medium p-3 rounded-md" style={{ color: TEXT_WHITE, backgroundColor: SUCCESS_GREEN }}>{successMessage}</p>
-                )}
-                <Button 
-                  type="submit" 
-                  className="w-full h-11 rounded-md text-base font-semibold shadow-md hover:shadow-lg focus:shadow-lg hover:scale-[1.02] focus:scale-[1.02] active:scale-[0.98] transition-all duration-150 ease-in-out focus:ring-2 focus:ring-green-400 focus:ring-offset-2"
-                  style={{ backgroundColor: IFC_GREEN, color: TEXT_WHITE }}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    "Criar Conta"
+
+                {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+                {success && <p className="text-sm font-medium text-green-500">{success}</p>}
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
+                  {isLoading ? "Criando Conta..." : "Criar Conta"}
                 </Button>
               </div>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col items-center space-y-2 p-6 sm:p-8 pt-4">
-            <div className="text-sm" style={{ color: IFC_GRAY }}>
-              Já tem uma conta?{" "}
-              <Link href="/login" className="font-medium underline hover:text-green-600 dark:hover:text-green-500 transition-colors duration-150 ease-in-out" style={{ color: IFC_GREEN }}>
-                Faça Login
-              </Link>
-            </div>
-            <div className="mt-3 text-sm">
-              <Link href="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-150 ease-in-out flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                Voltar à Página Inicial
-              </Link>
-            </div>
+          <CardFooter>
+             <div className="mt-4 text-center text-sm">
+                Já tem uma conta?{" "}
+                <Link href="/login" className="underline">
+                  Faça login
+                </Link>
+              </div>
           </CardFooter>
         </Card>
       </div>
-    </main>
+    </div>
   )
 } 
