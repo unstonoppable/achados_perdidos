@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -105,10 +105,6 @@ const getStatusPresentation = (status: ItemDetails['status']) => {
   };
 };
 
-const IFC_GRAY_STATUS = "#676767";
-const DEFAULT_STATUS_COLOR = "#3B82F6"; // Azul para Reivindicado
-const TEXT_WHITE = "#FFFFFF";
-
 const baseUrl = "https://achados-perdidos.infinityfreeapp.com/php_api/uploads/";
 const PHP_API_URL_ITEMS = "https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php";
 const PHP_API_URL_USER_SEARCH = "https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/user/search-users.php";
@@ -187,8 +183,8 @@ export default function ItemDetailsPage() {
     }
   }, [id]);
 
-  const debouncedUserSearch = useCallback(
-    debounce(async (searchTerm: string) => {
+  const debouncedUserSearch = useMemo(
+    () => debounce(async (searchTerm: string) => {
       if (searchTerm.trim().length < 2) {
         setSearchedUsers([]);
         setUserSearchError(null); // Limpa erro se o termo for muito curto
@@ -218,8 +214,7 @@ export default function ItemDetailsPage() {
         setIsSearchingUsers(false);
       }
     }, 500), // 500ms de debounce
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [] // Array de dependências vazio é apropriado aqui
+    [] 
   );
 
   const handleUserSearchTermChange = (term: string) => {
