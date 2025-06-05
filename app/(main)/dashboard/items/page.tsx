@@ -4,15 +4,6 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import Image from "next/image";
 import { Box, ImageOff, PackageCheck, PackageSearch, CalendarClock } from "lucide-react"; // Adicionado CalendarClock
 
@@ -167,24 +158,24 @@ function ItemsPageComponent() {
 
   if (error) {
     return (
-      <Card className="w-full max-w-md mx-auto mt-10 shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-destructive text-center">Erro ao Carregar Itens</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
+      <div className="w-full max-w-md mx-auto mt-10 shadow-lg rounded-lg border bg-card text-card-foreground">
+        <div className="p-6">
+          <h2 className="text-2xl font-semibold leading-none tracking-tight text-destructive text-center">Erro ao Carregar Itens</h2>
+        </div>
+        <div className="p-6 pt-0 text-center">
           <p>{error}</p>
-          <Button 
+          <button
             onClick={() => {
               if (typeof window !== 'undefined') {
                 window.location.reload();
               }
-            }} 
-            className="mt-6"
+            }}
+            className="mt-6 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
           >
             Tentar Novamente
-          </Button>
-        </CardContent>
-      </Card>
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -197,27 +188,27 @@ function ItemsPageComponent() {
             Visualize todos os itens achados e perdidos no sistema.
           </p>
         </div>
-        <Link href="/dashboard/items/new" passHref>
-          <Button size="lg">Cadastrar Novo Item</Button>
+        <Link href="/dashboard/items/new">
+          <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8">Cadastrar Novo Item</button>
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <Card className="shadow-lg">
-          <CardContent className="pt-8 text-center">
+        <div className="shadow-lg rounded-lg border bg-card text-card-foreground">
+          <div className="p-6 pt-8 text-center">
             <Box size={48} className="mx-auto text-muted-foreground mb-4" />
             <p className="text-xl text-muted-foreground mb-2">Nenhum item cadastrado ainda.</p>
             <Link href="/dashboard/items/new" className="mt-2 inline-block">
-                <Button variant="secondary">Seja o primeiro a cadastrar!</Button>
+                <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2">Seja o primeiro a cadastrar!</button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {items.map((item) => {
             const statusInfo = getStatusPresentation(item.status);
             return (
-              <Card key={item.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-zinc-800">
+              <div key={item.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-zinc-800 rounded-lg border">
                 <div className="relative w-full aspect-video bg-gray-100 dark:bg-zinc-700">
                   {item.foto_item_url && !item.imageError ? (
                     <Image 
@@ -236,9 +227,9 @@ function ItemsPageComponent() {
                     </div>
                   )}
                 </div>
-                <CardHeader className="pb-2 pt-4 px-4">
+                <div className="pb-2 pt-4 px-4">
                   <div className="flex justify-between items-start ">
-                      <CardTitle className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{item.nome_item}</CardTitle>
+                      <h3 className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{item.nome_item}</h3>
                       <div
                         className={`flex items-center text-xs font-medium rounded-full capitalize px-2 py-1`} // Ajustado padding
                         style={{ backgroundColor: statusInfo.itemBgColor, color: statusInfo.itemTextColor }}
@@ -247,14 +238,14 @@ function ItemsPageComponent() {
                           <span className="ml-1.5">{statusInfo.label}</span>
                       </div>
                   </div>
-                  <CardDescription className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
                     Local: {item.local_encontrado || 'N/A'}
-                  </CardDescription>
-                   <CardDescription className="text-xs text-gray-500 dark:text-gray-400">
+                  </p>
+                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Encontrado em: {formatDate(item.data_encontrado)} {item.turno_encontrado && `(${item.turno_encontrado})`}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow py-2 px-4">
+                  </p>
+                </div>
+                <div className="flex-grow py-2 px-4">
                   <p className="text-sm line-clamp-3 text-gray-600 dark:text-gray-300 mb-2">{item.descricao || "Nenhuma descrição fornecida."}</p>
                   <div className="text-xs space-y-0.5 text-gray-500 dark:text-gray-400">
                     <p>Cadastro: {formatDate(item.data_cadastro_item)}</p>
@@ -269,13 +260,13 @@ function ItemsPageComponent() {
                       </>
                     )}
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-end items-center pt-3 pb-3 px-4 border-t border-gray-200 dark:border-zinc-700">
-                  <Link href={`/dashboard/items/${item.id}`} passHref>
-                    <Button variant="outline" size="sm" className="dark:text-gray-300 dark:border-zinc-600 dark:hover:bg-zinc-700">Ver Detalhes</Button>
+                </div>
+                <div className="flex justify-end items-center pt-3 pb-3 px-4 border-t border-gray-200 dark:border-zinc-700">
+                  <Link href={`/dashboard/items/${item.id}`}>
+                    <button className="dark:text-gray-300 dark:border-zinc-600 dark:hover:bg-zinc-700 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">Ver Detalhes</button>
                   </Link>
-                </CardFooter>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>

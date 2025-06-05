@@ -3,9 +3,6 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useCallback, Suspense } from 'react';
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { ArrowLeft, UploadCloud, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image'; // Para preview da imagem
@@ -124,17 +121,17 @@ function UploadPhotoPageComponent() {
         <ArrowLeft size={16} />
         Voltar ao Dashboard
       </Link>
-      <Card className="shadow-xl border-0 rounded-lg bg-white dark:bg-zinc-800">
-        <CardHeader className="p-6">
-          <CardTitle className="text-2xl font-bold" style={{ color: TARGET_TEXT_COLOR }}>
+      <div className="shadow-xl border-0 rounded-lg bg-white dark:bg-zinc-800">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold" style={{ color: TARGET_TEXT_COLOR }}>
             Alterar Foto de Perfil
-          </CardTitle>
-          <CardDescription style={{ color: TARGET_TEXT_COLOR }}>
+          </h2>
+          <p style={{ color: TARGET_TEXT_COLOR }}>
             Escolha uma nova foto para seu perfil.
-          </CardDescription>
-        </CardHeader>
+          </p>
+        </div>
         <form onSubmit={handleSubmit}>
-          <CardContent className="p-6 space-y-6">
+          <div className="p-6 space-y-6">
             <div 
               {...getRootProps()} 
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
@@ -155,27 +152,25 @@ function UploadPhotoPageComponent() {
 
             {previewUrl && selectedFile && (
               <div className="mt-6 text-center space-y-3">
-                <Label style={{ color: TARGET_TEXT_COLOR }}>Pré-visualização:</Label>
+                <label style={{ color: TARGET_TEXT_COLOR }}>Pré-visualização:</label>
                 <div className="relative inline-block border rounded-lg overflow-hidden shadow-md w-48 h-48 mx-auto">
                   <Image src={previewUrl} alt={`Preview de ${selectedFile.name}`} layout="fill" objectFit="cover" />
-                  <Button 
+                  <button
                     type="button" 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 rounded-full h-7 w-7 z-10"
+                    className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 rounded-full h-7 w-7 z-10 inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                     onClick={handleRemovePreview}
                   >
                     <XCircle size={20} className="text-white" />
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
-          </CardContent>
-          <CardFooter className="p-6 border-t dark:border-zinc-700 flex flex-col items-start gap-4 md:flex-row md:justify-between md:items-center">
-            <Button 
+          </div>
+          <div className="p-6 border-t dark:border-zinc-700 flex flex-col items-start gap-4 md:flex-row md:justify-between md:items-center">
+            <button
               type="submit" 
               style={{ backgroundColor: IFC_GREEN, color: TARGET_TEXT_COLOR }}
-              className="font-semibold hover:opacity-90 transition-opacity min-w-[120px]"
+              className="font-semibold hover:opacity-90 transition-opacity min-w-[120px] inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               disabled={!selectedFile || isUploading}
             >
               {isUploading ? (
@@ -183,15 +178,15 @@ function UploadPhotoPageComponent() {
               ) : (
                 'Salvar Foto'
               )}
-            </Button>
+            </button>
             {message && (
               <p className={`text-sm font-medium ${message.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {message.text}
               </p>
             )}
-          </CardFooter>
+          </div>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }
