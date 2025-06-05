@@ -22,7 +22,6 @@ function UploadPhotoForm() {
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[]) => {
@@ -53,10 +52,15 @@ function UploadPhotoForm() {
         multiple: false,
     });
 
-    const onSubmit = async (data: any) => {
+    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!file) {
+            setError("Por favor, selecione um arquivo primeiro.");
+            return;
+        }
         setIsLoading(true);
         const formData = new FormData();
-        formData.append('profileImage', data.profileImage[0]);
+        formData.append('profileImage', file);
 
         try {
             const { data: responseData } = await api.post('/users/me/photo', formData, {
@@ -72,8 +76,16 @@ function UploadPhotoForm() {
             } else {
                 toast.error('Falha no upload', { description: responseData.message });
             }
-        } catch (error: any) {
-            const message = error.response?.data?.message || error.message || "Erro desconhecido";
+        } catch (error: unknown) {
+            let message = "Erro desconhecido";
+            if (error instanceof Error) {
+                const apiError = error as any;
+                if (apiError.response?.data?.message) {
+                    message = apiError.response.data.message;
+                } else {
+                    message = error.message;
+                }
+            }
             toast.error('Erro no servidor', { description: message });
         } finally {
             setIsLoading(false);
@@ -147,7 +159,6 @@ function UploadPhotoForm() {
                         )}
 
                         {error && <p className="text-red-600 dark:text-red-500 text-sm font-medium">{error}</p>}
-                        {success && <p className="text-green-600 dark:text-green-500 text-sm font-medium">{success}</p>}
                         
                         <div className="flex justify-end gap-4 pt-4">
                              <Button

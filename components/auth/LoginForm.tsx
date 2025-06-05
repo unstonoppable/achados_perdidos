@@ -44,8 +44,16 @@ export function LoginForm() {
           description: data.message || 'Email ou senha incorretos.',
         });
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Erro de conexão com o servidor.";
+    } catch (error: unknown) {
+      let message = 'Erro de conexão com o servidor.';
+      if (error instanceof Error) {
+          const apiError = error as any;
+          if (apiError.response?.data?.message) {
+              message = apiError.response.data.message;
+          } else {
+              message = error.message;
+          }
+      }
       toast.error('Erro no servidor', { description: message });
     }
   };

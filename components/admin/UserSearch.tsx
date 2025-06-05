@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import api from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, User, Mail, Hash } from 'lucide-react';
+import { Search, Loader2, Mail, Hash } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 
@@ -16,12 +16,12 @@ interface SearchedUser {
   tipo: 'aluno' | 'servidor' | 'admin';
 }
 
-function debounce<T extends (...args: any[]) => void>(func: T, delay: number) {
+function debounce<F extends (...args: any[]) => any>(func: F, delay: number) {
   let timeout: NodeJS.Timeout;
-  return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
+  return function(this: ThisParameterType<F>, ...args: Parameters<F>): void {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), delay);
-  } as T;
+  };
 }
 
 const UserSearch = () => {
@@ -30,7 +30,7 @@ const UserSearch = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async (term: string) => {
+  const handleSearch = useCallback(async (term: string) => {
     if (term.trim().length < 2) {
       setResults([]);
       // Não mostra erro se o campo estiver vazio ou muito curto
@@ -51,17 +51,22 @@ const UserSearch = () => {
         toast.error('Erro na busca', { description: data.message });
         setResults([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      let message = 'Não foi possível conectar ao servidor.';
+      if (error instanceof Error) {
+        const apiError = error as any;
+        message = apiError.response?.data?.message || apiError.message;
+      }
       toast.error('Erro de conexão', {
-        description: error.response?.data?.message || error.message || 'Não foi possível conectar ao servidor.',
+        description: message,
       });
       setResults([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const debouncedSearch = useMemo(() => debounce(handleSearch, 500), []);
+  const debouncedSearch = useMemo(() => debounce(handleSearch, 500), [handleSearch]);
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;

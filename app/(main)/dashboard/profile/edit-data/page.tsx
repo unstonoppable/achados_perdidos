@@ -43,7 +43,7 @@ const EditDataPage = () => {
           setValue('email', data.user.email);
           setValue('matricula', data.user.matricula || '');
         }
-      } catch (error) {
+      } catch {
         toast.error('Erro ao buscar dados', { description: 'Não foi possível carregar suas informações.' });
       }
     };
@@ -63,8 +63,17 @@ const EditDataPage = () => {
       } else {
         toast.error('Falha ao atualizar', { description: data.message });
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro ao conectar ao servidor.';
+    } catch (error: unknown) {
+      let message = 'Erro ao conectar ao servidor.';
+      if (error instanceof Error) {
+          // Se for uma instância de Error, podemos tentar pegar a mensagem da resposta da API
+          const apiError = error as any;
+          if (apiError.response?.data?.message) {
+              message = apiError.response.data.message;
+          } else {
+              message = error.message;
+          }
+      }
       toast.error('Erro no servidor', { description: message });
     }
   };
