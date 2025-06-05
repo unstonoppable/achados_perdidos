@@ -6,16 +6,13 @@ import React, { useState, useCallback, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ArrowLeft, UploadCloud, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image'; // Para preview da imagem
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
 
 const TARGET_TEXT_COLOR = "#3D3D3D";
-const IFC_GREEN = "#98EE6F";
-const PHP_API_BASE_URL = "http://achados-perdidos.infinityfreeapp.com/php_api/endpoints";
 
 // Componente para o formulário de upload, para poder ser envolvido por Suspense
 function UploadPhotoForm() {
@@ -26,7 +23,7 @@ function UploadPhotoForm() {
     const [success, setSuccess] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
+    const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[]) => {
         setError(null);
         if (fileRejections.length > 0) {
             const firstError = fileRejections[0].errors[0];

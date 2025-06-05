@@ -21,7 +21,7 @@ import Link from "next/link"
 // const API_BASE_URL = "http://192.168.1.10/php_api"; 
 const API_BASE_URL = "http://achados-perdidos.infinityfreeapp.com/php_api"; // URL de produção
 
-interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
+type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement>
 
 export function LoginForm({ className, ...props }: UserAuthFormProps) {
   const [email, setEmail] = useState("")
