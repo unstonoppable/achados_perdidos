@@ -45,6 +45,17 @@ const ifcGray = "#676767";
 const ifcOrange = "#FFA500"; // Cor para status 'expirado'
 const whiteText = "#FFFFFF";
 
+// Interface para a resposta genérica da API
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+}
+
+// Interface para a resposta da API de listagem de itens
+interface ItemsApiResponse extends ApiResponse {
+  items: Item[];
+}
+
 // Interface para tipar os dados do item recebidos da API
 interface Item {
   id: number;
@@ -147,7 +158,7 @@ const ItemsPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get('/items');
+      const response = await api.get<ItemsApiResponse>('/items');
       if (response.data.success) {
         setItems(response.data.items);
       } else {
@@ -209,12 +220,12 @@ const ItemsPage: React.FC = () => {
       let response;
       if (editingItemId) {
         // Modo de Edição
-        response = await api.put(`/items/${editingItemId}`, formData, {
+        response = await api.put<ApiResponse>(`/items/${editingItemId}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
         // Modo de Criação
-        response = await api.post('/items', formData, {
+        response = await api.post<ApiResponse>('/items', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       }
@@ -241,7 +252,7 @@ const ItemsPage: React.FC = () => {
   const handleDelete = async () => {
     if (!itemToDeleteId) return;
     try {
-      await api.delete(`/items/${itemToDeleteId}`);
+      await api.delete<ApiResponse>(`/items/${itemToDeleteId}`);
       toast.success("Item excluído com sucesso!");
       fetchItems();
     } catch (error: unknown) {

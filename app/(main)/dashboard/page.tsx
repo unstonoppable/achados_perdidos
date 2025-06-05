@@ -48,6 +48,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserSearch from "@/components/admin/UserSearch";
 import axios from 'axios';
 
+// Interfaces para a resposta da API
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+}
+interface ItemsApiResponse extends ApiResponse {
+  items: Item[];
+}
+
 // Interface para tipar os dados do item (copiada de items/page.tsx)
 interface Item {
   id: number;
@@ -142,7 +151,7 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
     if (searchTerm.trim() !== "") params.append("search", searchTerm.trim());
     
     try {
-      const { data } = await api.get<{ success: boolean; items: Item[]; message?: string; }>('/items', { params });
+      const { data } = await api.get<ItemsApiResponse>('/items', { params });
 
       if (data.success) {
         const fetchedItems = (data.items || []).map((item) => ({ ...item, imageError: false }));
@@ -184,7 +193,7 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
   const handleDelete = async () => {
     if (!itemToDeleteId) return;
     try {
-      const { data } = await api.delete(`/items/${itemToDeleteId}`);
+      const { data } = await api.delete<ApiResponse>(`/items/${itemToDeleteId}`);
       if (data.success) {
         toast.success("Item deletado com sucesso!");
         fetchItems(); // Recarregar itens
