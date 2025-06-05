@@ -27,6 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Toaster } from "@/components/ui/sonner";
+import api from '@/lib/api';
 
 // Configurar a fonte IBM Plex Sans
 const ibmPlexSans = IBM_Plex_Sans({
@@ -52,39 +54,23 @@ export const useAuth = () => {
     const isGuest = guestViewParam === 'guest';
     setIsGuestView(isGuest);
 
+    if (isGuest) {
+      setIsLoggedIn(false);
+      setUserName('Visitante');
+      setIsLoading(false);
+      return;
+    }
+
     const checkSession = async () => {
       setIsLoading(true);
-      if (!isGuest) {
-        setIsLoggedIn(false); 
-        setUserName('');
-        setUserId(null);
-        setIsAdmin(false);
-        setUserPhotoUrl(null);
-      }
-
-      if (isGuest) {
-        setIsLoggedIn(false);
-        setUserName('Visitante'); 
-        setUserId(null);
-        setIsAdmin(false);
-        setUserPhotoUrl(null);
-        setIsLoading(false);
-        return; 
-      }
-
       try {
-        const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-        const storedUserName = localStorage.getItem("userName");
-        const storedUserId = localStorage.getItem("userId");
-        const storedIsAdmin = localStorage.getItem("isAdmin") === "true";
-        const storedUserPhotoUrl = localStorage.getItem("userPhotoUrl");
-
-        if (loggedIn && storedUserName && storedUserId !== null) {
+        const { data } = await api.get('/auth/me');
+        if (data.success && data.user) {
           setIsLoggedIn(true);
-          setUserName(storedUserName);
-          setUserId(parseInt(storedUserId, 10));
-          setIsAdmin(storedIsAdmin);
-          if (storedUserPhotoUrl) setUserPhotoUrl(storedUserPhotoUrl);
+          setUserName(data.user.name);
+          setUserId(data.user.id);
+          setIsAdmin(data.user.isAdmin);
+          setUserPhotoUrl(data.user.photoUrl);
         } else {
           setIsLoggedIn(false);
         }
@@ -95,47 +81,9 @@ export const useAuth = () => {
         setIsLoading(false);
       }
     };
+
     checkSession();
-
-    const handleUserDataChange = async () => {
-      if (isGuestView) return; // Não busca dados se for visitante
-      try {
-        const response = await fetch('https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/user/get-user-data.php', {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.data) {
-            const { name, photoUrl, isAdmin } = result.data;
-            setUserName(name || '');
-            setUserPhotoUrl(photoUrl || null);
-            setIsAdmin(isAdmin || false);
-            if (typeof window !== "undefined") {
-              localStorage.setItem("userName", name || '');
-              if (photoUrl) localStorage.setItem("userPhotoUrl", photoUrl);
-              else localStorage.removeItem("userPhotoUrl");
-              localStorage.setItem("isAdmin", isAdmin ? "true" : "false");
-            }
-          } else {
-            console.error("Falha ao buscar dados do usuário do backend:", result.message);
-          }
-        } else {
-          console.error("Erro na requisição para buscar dados do usuário:", response.status);
-        }
-      } catch (error) {
-        console.error("Erro de exceção ao buscar dados do usuário:", error);
-      }
-    };
-
-    window.addEventListener('userDataChanged', handleUserDataChange);
-    return () => {
-      window.removeEventListener('userDataChanged', handleUserDataChange);
-    };
-  }, [router, searchParams, isGuestView]);
+  }, [searchParams]);
 
   return { isLoggedIn, isLoading, userName, userId, isAdmin, userPhotoUrl, isGuestView };
 };
@@ -241,13 +189,16 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
   const searchParamsHook = useSearchParams(); // Renomeado para evitar conflito
   const currentStatusFilter = searchParamsHook.get('status');
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("userPhotoUrl");
-    router.push('/');
+  const handleLogout = useCallback(async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    } finally {
+      router.push('/');
+      // Forçar a recarga da janela para limpar qualquer estado restante
+      window.location.reload();
+    }
   }, [router]);
 
   // Movido o cálculo para dentro do useMemo
@@ -446,7 +397,6 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
                      px-4 sm:px-5 md:px-6 
                      bg-gray-100 dark:bg-zinc-950`}
         >
-          {/* Div interna para garantir que o footer fique no final se o conteúdo for curto */} 
           <div className="flex flex-col min-h-full">
             <div className="flex-grow">
               <Suspense fallback={<div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><p className="text-lg" style={{ color: TARGET_TEXT_COLOR }}>Carregando página...</p></div>}>
@@ -485,6 +435,7 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
           />
         ))}
       </nav>
+      <Toaster richColors />
     </div>
   );
 } 

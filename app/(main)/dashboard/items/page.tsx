@@ -2,7 +2,7 @@
 
 // export const dynamic = 'force-dynamic'; // Força a renderização dinâmica - TEMPORARIAMENTE REMOVIDO PARA TESTE
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,35 @@ import {
 } from "@/components/ui/card";
 import Image from "next/image";
 import { Box, ImageOff, PackageCheck, PackageSearch, CalendarClock } from "lucide-react"; // Adicionado CalendarClock
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 // Cores IFC (Adicionadas)
 const ifcGreen = "#98EE6F";
@@ -88,11 +117,59 @@ const getStatusPresentation = (status: Item['status']) => {
   }
 };
 
-// Componente que contém a lógica da página de listagem de itens
-function ItemsPageComponent() {
+const formSchema = z.object({
+  nome: z.string().min(3, "O nome do item é obrigatório."),
+  descricao: z.string().min(10, "A descrição é obrigatória."),
+  local: z.string().min(3, "O local é obrigatório."),
+  status: z.enum(['encontrado', 'perdido']),
+  image: z.any().optional(), // Validação de arquivo é complexa com Zod, simplificada aqui
+});
+
+const ItemsPage: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  
+  // Estados para o diálogo de confirmação de exclusão
+  const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
+  const [itemToDeleteId, setItemToDeleteId] = useState<number | null>(null);
+  const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      nome: '',
+      descricao: '',
+      local: '',
+      status: 'encontrado',
+    }
+  });
+
+  const { reset, setValue, formState: { isSubmitting } } = form;
+
+  const fetchItems = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Usar a nova API para buscar itens
+      const response = await api.get('/items');
+      if (response.data.success) {
+        setItems(response.data.items);
+      } else {
+        setError("Não foi possível carregar os itens.");
+      }
+    } catch (err) {
+      setError("Erro de conexão ao buscar itens.");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleImageError = (itemId: number) => {
     setItems(currentItems =>
@@ -101,46 +178,6 @@ function ItemsPageComponent() {
       )
     );
   };
-
-  useEffect(() => {
-    const fetchItems = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(
-          "https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/items.php",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include", 
-          }
-        );
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          setItems((result.items || []).map((item: Omit<Item, 'imageError'>) => ({ ...item, imageError: false })));
-        } else {
-          setError(result.message || "Falha ao buscar os itens.");
-        }
-      } catch (err: unknown) {
-        console.error("Erro na requisição de listagem de itens:", err);
-        let message = "Erro ao conectar ao servidor para buscar itens.";
-        if (err instanceof Error) {
-          message = err.message;
-        } else if (typeof err === 'string') {
-          message = err;
-        }
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchItems();
-  }, []);
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "N/A";
@@ -153,6 +190,84 @@ function ItemsPageComponent() {
       });
     } catch {
       return dateString; 
+    }
+  };
+
+  const handleEditClick = (item: Item) => {
+    setEditingItemId(item.id);
+    setValue('nome', item.nome_item);
+    setValue('descricao', item.descricao);
+    setValue('local', item.local_encontrado);
+    setValue('status', item.status as 'encontrado' | 'perdido');
+    setIsFormVisible(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    reset(); // Limpa o formulário
+    setIsFormVisible(false);
+  };
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const formData = new FormData();
+    formData.append('nome', values.nome);
+    formData.append('descricao', values.descricao);
+    formData.append('local', values.local);
+    formData.append('status', values.status);
+    if (values.image && values.image[0]) {
+      formData.append('image', values.image[0]);
+    }
+
+    try {
+      let response;
+      if (editingItemId) {
+        // Modo de Edição
+        response = await api.put(`/items/${editingItemId}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        // Modo de Criação
+        response = await api.post('/items', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+
+      const { data } = response;
+      if (data.success) {
+        toast.success(editingItemId ? 'Item atualizado com sucesso!' : 'Item cadastrado com sucesso!');
+        handleCancelEdit();
+        fetchItems(); // Agora esta chamada é válida
+      } else {
+        toast.error('Erro ao salvar', { description: data.message });
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Erro de conexão com o servidor.';
+      toast.error('Erro no servidor', { description: message });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!itemToDeleteId) return;
+    try {
+      const { data } = await api.delete(`/items/${itemToDeleteId}`);
+      if (data.success) {
+        toast.success("Item deletado com sucesso!");
+        fetchItems(); // Recarregar itens aqui também
+      } else {
+        toast.error("Erro ao deletar item", {
+          description: data.message,
+        });
+      }
+    } catch (error: any) {
+      toast.error("Erro de conexão", {
+        description: error.message || "Não foi possível conectar ao servidor.",
+      });
+      console.error('Erro na requisição para apagar item:', error);
+    } finally {
+      setActiveDropdownId(null);
+      setIsConfirmDeleteDialogOpen(false);
+      setItemToDeleteId(null);
     }
   };
 
@@ -189,31 +304,47 @@ function ItemsPageComponent() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Itens Cadastrados</h1>
-          <p className="text-muted-foreground mt-1">
-            Visualize todos os itens achados e perdidos no sistema.
-          </p>
-        </div>
-        <Link href="/dashboard/items/new" passHref>
-          <Button size="lg">Cadastrar Novo Item</Button>
-        </Link>
+    <div className="container mx-auto p-4 md:p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
+          Itens Cadastrados
+        </h1>
+        <Button onClick={() => setIsFormVisible(prev => !prev)} style={{ backgroundColor: ifcGreen, color: whiteText }}>
+          {isFormVisible ? 'Fechar Formulário' : 'Cadastrar Novo Item'}
+        </Button>
       </div>
 
-      {items.length === 0 ? (
-        <Card className="shadow-lg">
-          <CardContent className="pt-8 text-center">
-            <Box size={48} className="mx-auto text-muted-foreground mb-4" />
-            <p className="text-xl text-muted-foreground mb-2">Nenhum item cadastrado ainda.</p>
-            <Link href="/dashboard/items/new" className="mt-2 inline-block">
-                <Button variant="secondary">Seja o primeiro a cadastrar!</Button>
-            </Link>
+      {isFormVisible && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>{editingItemId ? 'Editar Item' : 'Cadastrar Novo Item'}</CardTitle>
+            <CardDescription>
+              {editingItemId ? 'Altere os dados do item abaixo.' : 'Preencha as informações do novo item.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Salvando...' : (editingItemId ? 'Salvar Alterações' : 'Cadastrar Item')}
+                </Button>
+                {editingItemId && (
+                  <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                    Cancelar Edição
+                  </Button>
+                )}
+              </form>
+            </Form>
           </CardContent>
         </Card>
+      )}
+
+      {isLoading ? (
+        <p>Carregando itens...</p>
+      ) : error ? (
+        <p className="text-red-500">{error}</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {items.map((item) => {
             const statusInfo = getStatusPresentation(item.status);
             return (
@@ -240,7 +371,7 @@ function ItemsPageComponent() {
                   <div className="flex justify-between items-start ">
                       <CardTitle className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{item.nome_item}</CardTitle>
                       <div
-                        className={`flex items-center text-xs font-medium rounded-full capitalize px-2 py-1`} // Ajustado padding
+                        className={`flex items-center text-xs font-medium rounded-full capitalize px-2 py-1`}
                         style={{ backgroundColor: statusInfo.itemBgColor, color: statusInfo.itemTextColor }}
                       >
                           {statusInfo.icon}
@@ -272,22 +403,40 @@ function ItemsPageComponent() {
                 </CardContent>
                 <CardFooter className="flex justify-end items-center pt-3 pb-3 px-4 border-t border-gray-200 dark:border-zinc-700">
                   <Link href={`/dashboard/items/${item.id}`} passHref>
-                    <Button variant="outline" size="sm" className="dark:text-gray-300 dark:border-zinc-600 dark:hover:bg-zinc-700">Ver Detalhes</Button>
+                    <Button variant="outline" size="sm">Ver Detalhes</Button>
                   </Link>
+                  <DropdownMenu onOpenChange={(open) => !open && setActiveDropdownId(null)}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" onClick={() => { setItemToDeleteId(item.id); setIsConfirmDeleteDialogOpen(true); }}>...</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditClick(item)}>Editar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setItemToDeleteId(item.id); setIsConfirmDeleteDialogOpen(true); }}>Excluir</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </CardFooter>
               </Card>
             );
           })}
         </div>
       )}
+
+      <AlertDialog open={isConfirmDeleteDialogOpen} onOpenChange={setIsConfirmDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o item.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDeleteId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-}
+};
 
-//TODO: Verificar se useSearchParams é usado aqui ou em ItemsPageComponent
-// A mensagem de erro sugere que é nesta página (ou um componente renderizado diretamente por ela)
-export default function ListItemsPage() {
-  // Se useSearchParams for usado aqui, o Suspense deve envolver o JSX que depende dele.
-  // Se ItemsPageComponent ou um filho dele usar useSearchParams, envolver ItemsPageComponent é o correto.
-  return <ItemsPageComponent />;
-} 
+export default ItemsPage;

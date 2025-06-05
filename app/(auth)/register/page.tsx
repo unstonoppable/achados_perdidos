@@ -1,92 +1,79 @@
 "use client"
 
-import { useState, FormEvent } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import Image from "next/image"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
-// !!! IMPORTANTE PARA TESTE EM DISPOSITIVOS MÓVEIS NA MESMA REDE !!!
-// Descomente a linha abaixo e substitua pelo IP da sua máquina.
-// const API_BASE_URL = "http://192.168.1.10/php_api"; 
-const API_BASE_URL = "https://achados-perdidos.infinityfreeapp.com/php_api"; // URL de produção
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
+
+const formSchema = z.object({
+  nome: z.string().min(3, { message: "O nome completo é obrigatório." }),
+  email: z.string().email({ message: "Por favor, insira um email válido." }),
+  matricula: z.string().min(1, { message: "A matrícula é obrigatória." }),
+  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem.",
+  path: ["confirmPassword"],
+});
 
 // Componente principal da página de registro
 export default function RegisterPage() {
-  // Estados para os campos do formulário
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [matricula, setMatricula] = useState("")
+  const router = useRouter();
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      nome: '',
+      email: '',
+      matricula: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
 
-  // Estados para controle de UI
-  const [error, setError] = useState<string | null>("")
-  const [success, setSuccess] = useState<string | null>("")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const { formState: { isSubmitting } } = form;
 
-  // Função para lidar com o envio do formulário
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsLoading(true)
-    setError(null)
-    setSuccess(null)
-
-    // Validação de senha
-    if (password !== confirmPassword) {
-      setError("As senhas não coincidem.")
-      setIsLoading(false)
-      return
-    }
-
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/endpoints/register.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome: name,
-          email: email,
-          senha: password,
-          matricula: matricula,
-        }),
-      })
-
-      const data = await response.json()
+      const { data } = await api.post('/auth/register', {
+        nome: values.nome,
+        email: values.email,
+        matricula: values.matricula,
+        senha: values.password,
+      });
 
       if (data.success) {
-        setSuccess(data.message || "Cadastro realizado com sucesso! Redirecionando para o login...")
+        toast.success('Cadastro realizado com sucesso!', {
+          description: 'Você será redirecionado para a página de login.',
+        });
         setTimeout(() => {
-          router.push("/login")
-        }, 2000)
+          router.push('/login');
+        }, 2000);
       } else {
-        setError(data.message || "Ocorreu um erro no cadastro.")
+        toast.error('Falha no cadastro', {
+          description: data.message || 'Não foi possível criar sua conta.',
+        });
       }
-    } catch (err) {
-      console.error("Erro na requisição de registro:", err)
-      setError("Erro de conexão. Tente novamente mais tarde.")
-    } finally {
-      setIsLoading(false)
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Erro de conexão com o servidor.";
+      toast.error('Erro no servidor', { description: message });
     }
-  }
+  };
 
   return (
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
       <div className="hidden bg-muted lg:block">
         <Image
-          src="/placeholder.svg" // Substitua pelo caminho da sua imagem
+          src="/placeholder.svg"
           alt="Imagem de fundo"
           width="1920"
           height="1080"
@@ -94,83 +81,24 @@ export default function RegisterPage() {
         />
       </div>
       <div className="flex items-center justify-center py-12">
-        <Card className={cn("mx-auto grid w-[350px] gap-6", "sm:w-[400px]")}>
+        <Card className="mx-auto w-[350px] sm:w-[400px]">
           <CardHeader>
             <CardTitle className="text-3xl">Cadastro</CardTitle>
-            <CardDescription>
-              Crie sua conta para encontrar e cadastrar itens.
-            </CardDescription>
+            <CardDescription>Crie sua conta para encontrar e cadastrar itens.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Nome Completo</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Seu Nome Completo"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@exemplo.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="matricula">Matrícula</Label>
-                  <Input
-                    id="matricula"
-                    type="text"
-                    placeholder="Sua Matrícula"
-                    required
-                    value={matricula}
-                    onChange={(e) => setMatricula(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="••••••••"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                  <Input 
-                    id="confirmPassword" 
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-
-                {error && <p className="text-sm font-medium text-red-500">{error}</p>}
-                {success && <p className="text-sm font-medium text-green-500">{success}</p>}
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {isLoading ? "Criando Conta..." : "Criar Conta"}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField control={form.control} name="nome" render={({ field }) => (<FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Seu Nome Completo" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="seu@email.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="matricula" render={({ field }) => (<FormItem><FormLabel>Matrícula</FormLabel><FormControl><Input placeholder="Sua Matrícula" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Senha</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="confirmPassword" render={({ field }) => (<FormItem><FormLabel>Confirmar Senha</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Criar Conta'}
                 </Button>
-              </div>
-            </form>
+              </form>
+            </Form>
           </CardContent>
           <CardFooter>
              <div className="mt-4 text-center text-sm">
@@ -183,5 +111,5 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 } 

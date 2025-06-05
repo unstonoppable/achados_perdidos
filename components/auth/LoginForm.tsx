@@ -1,122 +1,102 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import Link from "next/link"
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
-// !!! IMPORTANTE PARA TESTE EM DISPOSITIVOS MÓVEIS NA MESMA REDE !!!
-// Descomente a linha abaixo e substitua pelo IP da sua máquina.
-// const API_BASE_URL = "http://192.168.1.10/php_api"; 
-const API_BASE_URL = "https://achados-perdidos.infinityfreeapp.com/php_api"; // URL de produção
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
-type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement>
+const formSchema = z.object({
+  email: z.string().email({ message: "Por favor, insira um email válido." }),
+  password: z.string().min(1, { message: "A senha é obrigatória." }),
+});
 
-export function LoginForm({ className, ...props }: UserAuthFormProps) {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+export function LoginForm() {
+  const router = useRouter();
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsLoading(true)
-    setError(null)
-    
+  const { formState: { isSubmitting } } = form;
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/endpoints/login.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
+      const { data } = await api.post('/auth/login', values);
 
       if (data.success) {
-        // O token JWT é armazenado em um cookie HttpOnly pelo servidor.
-        // Redireciona para o dashboard após o login bem-sucedido.
-        router.push("/dashboard")
+        toast.success('Login realizado com sucesso!');
+        router.push('/dashboard');
+        router.refresh(); // Força a atualização dos dados do layout
       } else {
-        setError(data.message || "Erro no login.")
+        toast.error('Falha no login', {
+          description: data.message || 'Email ou senha incorretos.',
+        });
       }
-    } catch (err) {
-      console.error("Erro na requisição de login:", err)
-      setError("Erro de conexão ao tentar fazer login.")
-    } finally {
-      setIsLoading(false)
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Erro de conexão com o servidor.";
+      toast.error('Erro no servidor', { description: message });
     }
-  }
+  };
 
   return (
-    <div className={cn("grid gap-6", className)} {...props}>
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Entre com seu email para acessar o painel
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@exemplo.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Entrando..." : "Entrar"}
+    <Card className="w-full max-w-sm">
+      <CardHeader>
+        <CardTitle>Acessar Plataforma</CardTitle>
+        <CardDescription>Use seu email e senha para entrar.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="seu@email.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Entrar'}
             </Button>
           </form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-2">
-          <p className="px-8 text-center text-sm text-muted-foreground">
-            Ainda não tem uma conta?{" "}
-            <Link
-              href="/register"
-              className="underline underline-offset-4 hover:text-primary"
-            >
-              Registre-se
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
-    </div>
-  )
+        </Form>
+        <div className="mt-4 text-center text-sm">
+          Não tem uma conta?{" "}
+          <Link href="/register" className="underline">
+            Cadastre-se
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
 } 

@@ -11,6 +11,8 @@ import Link from 'next/link';
 import Image from 'next/image'; // Para preview da imagem
 import { useDropzone, FileRejection } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
 const TARGET_TEXT_COLOR = "#3D3D3D";
 
@@ -51,52 +53,28 @@ function UploadPhotoForm() {
         multiple: false,
     });
 
-    const handleSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
-        if (!file) {
-            setError("Por favor, selecione um arquivo de imagem.");
-            return;
-        }
-
+    const onSubmit = async (data: any) => {
         setIsLoading(true);
-        setError(null);
-        setSuccess(null);
-
         const formData = new FormData();
-        formData.append('profile_image', file);
-        
-        // Incluir o token de sessão na requisição
-        const token = document.cookie.split('; ').find(row => row.startsWith('session_token='))?.split('=')[1];
+        formData.append('profileImage', data.profileImage[0]);
 
         try {
-            const response = await fetch('https://achados-perdidos.infinityfreeapp.com/php_api/endpoints/upload_photo.php', {
-                method: 'POST',
-                body: formData,
+            const { data: responseData } = await api.post('/users/me/photo', formData, {
                 headers: {
-                    ...(token && { 'Authorization': `Bearer ${token}` })
+                    'Content-Type': 'multipart/form-data',
                 },
-                credentials: 'include'
             });
 
-            const result = await response.json();
-
-            if (response.ok && result.success) {
-                setSuccess(result.message || "Foto de perfil atualizada com sucesso!");
-                // Opcional: atualizar a URL da imagem no localStorage
-                if (typeof window !== "undefined") {
-                    localStorage.setItem('userPhotoUrl', result.filePath);
-                    // Disparar evento para que o layout possa atualizar a foto
-                    window.dispatchEvent(new Event('userDataChanged'));
-                }
-                setTimeout(() => {
-                    router.push('/dashboard');
-                }, 2000);
+            if (responseData.success) {
+                toast.success(responseData.message || "Foto de perfil atualizada!");
+                // Opcional: redirecionar ou atualizar o estado do layout
+                router.push('/dashboard/profile'); 
             } else {
-                setError(result.message || "Ocorreu um erro ao enviar a imagem.");
+                toast.error('Falha no upload', { description: responseData.message });
             }
-        } catch (err) {
-            console.error("Erro na requisição de upload:", err);
-            setError("Erro de conexão. Não foi possível conectar ao servidor.");
+        } catch (error: any) {
+            const message = error.response?.data?.message || error.message || "Erro desconhecido";
+            toast.error('Erro no servidor', { description: message });
         } finally {
             setIsLoading(false);
         }
@@ -126,7 +104,7 @@ function UploadPhotoForm() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={onSubmit} className="space-y-6">
                         <div 
                             {...getRootProps()} 
                             className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors duration-200 ease-in-out
