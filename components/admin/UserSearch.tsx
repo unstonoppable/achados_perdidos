@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Loader2, Mail, Hash } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 interface SearchedUser {
   id: number;
@@ -33,7 +34,6 @@ const UserSearch = () => {
   const handleSearch = useCallback(async (term: string) => {
     if (term.trim().length < 2) {
       setResults([]);
-      // Não mostra erro se o campo estiver vazio ou muito curto
       if (hasSearched) setHasSearched(false);
       return;
     }
@@ -53,9 +53,10 @@ const UserSearch = () => {
       }
     } catch (error: unknown) {
       let message = 'Não foi possível conectar ao servidor.';
-      if (error instanceof Error) {
-        const apiError = error as any;
-        message = apiError.response?.data?.message || apiError.message;
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error instanceof Error) {
+        message = error.message;
       }
       toast.error('Erro de conexão', {
         description: message,
@@ -64,7 +65,7 @@ const UserSearch = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [hasSearched]);
 
   const debouncedSearch = useMemo(() => debounce(handleSearch, 500), [handleSearch]);
 

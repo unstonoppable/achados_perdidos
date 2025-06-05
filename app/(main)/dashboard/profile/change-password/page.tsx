@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,8 +50,13 @@ const ChangePasswordPage = () => {
       } else {
         toast.error('Falha ao alterar a senha', { description: data.message });
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro ao conectar ao servidor.';
+    } catch (error: unknown) {
+      let message = 'Erro ao conectar ao servidor.';
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
       toast.error('Erro no servidor', { description: message });
     }
   };

@@ -13,6 +13,7 @@ import { useDropzone, FileRejection } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 const TARGET_TEXT_COLOR = "#3D3D3D";
 
@@ -78,13 +79,10 @@ function UploadPhotoForm() {
             }
         } catch (error: unknown) {
             let message = "Erro desconhecido";
-            if (error instanceof Error) {
-                const apiError = error as any;
-                if (apiError.response?.data?.message) {
-                    message = apiError.response.data.message;
-                } else {
-                    message = error.message;
-                }
+            if (axios.isAxiosError(error) && error.response?.data?.message) {
+                message = error.response.data.message;
+            } else if (error instanceof Error) {
+                message = error.message;
             }
             toast.error('Erro no servidor', { description: message });
         } finally {

@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,14 +66,10 @@ const EditDataPage = () => {
       }
     } catch (error: unknown) {
       let message = 'Erro ao conectar ao servidor.';
-      if (error instanceof Error) {
-          // Se for uma instância de Error, podemos tentar pegar a mensagem da resposta da API
-          const apiError = error as any;
-          if (apiError.response?.data?.message) {
-              message = apiError.response.data.message;
-          } else {
-              message = error.message;
-          }
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error instanceof Error) {
+        message = error.message;
       }
       toast.error('Erro no servidor', { description: message });
     }
