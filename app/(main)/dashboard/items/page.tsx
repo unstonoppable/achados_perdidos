@@ -20,6 +20,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import axios from 'axios';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,14 +37,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 
 // Cores IFC (Adicionadas)
 const ifcGreen = "#98EE6F";
@@ -135,7 +128,6 @@ const ItemsPage: React.FC = () => {
   // Estados para o diálogo de confirmação de exclusão
   const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState<number | null>(null);
-  const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -149,10 +141,12 @@ const ItemsPage: React.FC = () => {
 
   const { reset, setValue, formState: { isSubmitting } } = form;
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      // Usar a nova API para buscar itens
       const response = await api.get('/items');
       if (response.data.success) {
         setItems(response.data.items);
@@ -161,7 +155,6 @@ const ItemsPage: React.FC = () => {
       }
     } catch (err) {
       setError("Erro de conexão ao buscar itens.");
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -181,16 +174,9 @@ const ItemsPage: React.FC = () => {
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "N/A";
-    try {
-      const date = new Date(dateString);
-      // Verifica se a data é válida após a conversão, pois datas como "0000-00-00" podem virar "Invalid Date"
-      if (isNaN(date.getTime())) return "Data inválida";
-      return date.toLocaleDateString("pt-BR", {
-        year: 'numeric', month: '2-digit', day: '2-digit'
-      });
-    } catch {
-      return dateString; 
-    }
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Data inválida";
+    return date.toLocaleDateString("pt-BR", { year: 'numeric', month: '2-digit', day: '2-digit' });
   };
 
   const handleEditClick = (item: Item) => {
@@ -241,8 +227,13 @@ const ItemsPage: React.FC = () => {
       } else {
         toast.error('Erro ao salvar', { description: data.message });
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro de conexão com o servidor.';
+    } catch (error: unknown) {
+      let message = 'Erro de conexão com o servidor.';
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
       toast.error('Erro no servidor', { description: message });
     }
   };
@@ -250,25 +241,29 @@ const ItemsPage: React.FC = () => {
   const handleDelete = async () => {
     if (!itemToDeleteId) return;
     try {
-      const { data } = await api.delete(`/items/${itemToDeleteId}`);
-      if (data.success) {
-        toast.success("Item deletado com sucesso!");
-        fetchItems(); // Recarregar itens aqui também
-      } else {
-        toast.error("Erro ao deletar item", {
-          description: data.message,
-        });
+      await api.delete(`/items/${itemToDeleteId}`);
+      toast.success("Item excluído com sucesso!");
+      fetchItems();
+    } catch (error: unknown) {
+      let message = 'Erro ao excluir o item.';
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error instanceof Error) {
+          message = error.message;
       }
-    } catch (error: any) {
-      toast.error("Erro de conexão", {
-        description: error.message || "Não foi possível conectar ao servidor.",
-      });
-      console.error('Erro na requisição para apagar item:', error);
+      toast.error("Falha ao excluir", { description: message });
     } finally {
-      setActiveDropdownId(null);
       setIsConfirmDeleteDialogOpen(false);
       setItemToDeleteId(null);
     }
+  };
+
+  const handleAddNewClick = () => {
+    // setIsFormVisible(true);
+    // setEditingItemId(null);
+    // reset();
+    // window.scrollTo({ top: 0, behavior: 'smooth' });
+    // TODO: Idealmente, navegar para a página /dashboard/items/new
   };
 
   if (isLoading) {
@@ -306,132 +301,110 @@ const ItemsPage: React.FC = () => {
   return (
     <div className="container mx-auto p-4 md:p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
-          Itens Cadastrados
-        </h1>
-        <Button onClick={() => setIsFormVisible(prev => !prev)} style={{ backgroundColor: ifcGreen, color: whiteText }}>
-          {isFormVisible ? 'Fechar Formulário' : 'Cadastrar Novo Item'}
-        </Button>
+        <h1 className="text-2xl font-bold">Gerenciar Itens</h1>
+        <Link href="/dashboard/items/new" passHref>
+          <Button>Adicionar Novo Item</Button>
+        </Link>
       </div>
-
-      {isFormVisible && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>{editingItemId ? 'Editar Item' : 'Cadastrar Novo Item'}</CardTitle>
-            <CardDescription>
-              {editingItemId ? 'Altere os dados do item abaixo.' : 'Preencha as informações do novo item.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Salvando...' : (editingItemId ? 'Salvar Alterações' : 'Cadastrar Item')}
-                </Button>
-                {editingItemId && (
-                  <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                    Cancelar Edição
-                  </Button>
-                )}
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      )}
 
       {isLoading ? (
         <p>Carregando itens...</p>
       ) : error ? (
         <p className="text-red-500">{error}</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {items.map((item) => {
-            const statusInfo = getStatusPresentation(item.status);
-            return (
-              <Card key={item.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-zinc-800">
-                <div className="relative w-full aspect-video bg-gray-100 dark:bg-zinc-700">
-                  {item.foto_item_url && !item.imageError ? (
-                    <Image 
-                        src={`https://achados-perdidos.infinityfreeapp.com/php_api/uploads/${item.foto_item_url}`}
-                        alt={`Foto de ${item.nome_item}`} 
-                        layout="fill"
-                        objectFit="contain" 
-                        onError={() => handleImageError(item.id)}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-sm text-muted-foreground p-2">
-                      <ImageOff size={36} className="text-gray-400 dark:text-gray-500 mb-1" />
-                      <p className="text-xs text-center">
-                        {item.foto_item_url && item.imageError ? "Erro ao carregar imagem" : "Sem imagem"}
-                      </p>
-                    </div>
+      ) : items.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {items.map(item => (
+            <Card key={item.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="p-0 relative">
+                <div 
+                  className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-semibold z-10"
+                  style={{
+                    backgroundColor: getStatusPresentation(item.status).itemBgColor,
+                    color: getStatusPresentation(item.status).itemTextColor
+                  }}
+                >
+                  {getStatusPresentation(item.status).label}
+                </div>
+                {item.foto_item_url && !item.imageError ? (
+                  <Image
+                    alt={`Foto de ${item.nome_item}`}
+                    className="object-cover w-full h-48"
+                    height="200"
+                    src={`${API_URL}/${item.foto_item_url}`}
+                    style={{
+                      aspectRatio: "300/200",
+                      objectFit: "cover",
+                    }}
+                    width="300"
+                    onError={() => handleImageError(item.id)}
+                  />
+                ) : (
+                  <div className="w-full h-48 bg-gray-200 dark:bg-zinc-800 flex items-center justify-center">
+                    <ImageOff className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="p-4 flex-grow">
+                <CardTitle className="text-lg font-bold mb-2">{item.nome_item}</CardTitle>
+                <CardDescription className="text-sm text-gray-600 dark:text-gray-300 mb-4 h-20 overflow-y-auto">
+                  {item.descricao}
+                </CardDescription>
+                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                  <p><strong>Local:</strong> {item.local_encontrado}</p>
+                  <p><strong>Data:</strong> {formatDate(item.data_encontrado)}</p>
+                  {/* Informações adicionais para itens entregues ou expirados */}
+                  {item.status === 'entregue' && (
+                    <>
+                      <p><strong>Entregue em:</strong> {formatDate(item.data_entrega)}</p>
+                      <p><strong>Recebedor:</strong> {item.nome_pessoa_retirou}</p>
+                    </>
+                  )}
+                  {item.status === 'expirado' && (
+                    <p><strong>Data Limite:</strong> {formatDate(item.data_limite_retirada)}</p>
                   )}
                 </div>
-                <CardHeader className="pb-2 pt-4 px-4">
-                  <div className="flex justify-between items-start ">
-                      <CardTitle className="text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">{item.nome_item}</CardTitle>
-                      <div
-                        className={`flex items-center text-xs font-medium rounded-full capitalize px-2 py-1`}
-                        style={{ backgroundColor: statusInfo.itemBgColor, color: statusInfo.itemTextColor }}
-                      >
-                          {statusInfo.icon}
-                          <span className="ml-1.5">{statusInfo.label}</span>
-                      </div>
-                  </div>
-                  <CardDescription className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                    Local: {item.local_encontrado || 'N/A'}
-                  </CardDescription>
-                   <CardDescription className="text-xs text-gray-500 dark:text-gray-400">
-                    Encontrado em: {formatDate(item.data_encontrado)} {item.turno_encontrado && `(${item.turno_encontrado})`}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow py-2 px-4">
-                  <p className="text-sm line-clamp-3 text-gray-600 dark:text-gray-300 mb-2">{item.descricao || "Nenhuma descrição fornecida."}</p>
-                  <div className="text-xs space-y-0.5 text-gray-500 dark:text-gray-400">
-                    <p>Cadastro: {formatDate(item.data_cadastro_item)}</p>
-                    {item.data_limite_retirada && <p>Retirada até: {formatDate(item.data_limite_retirada)}</p>}
-                    {item.status === 'entregue' && (
-                      <>
-                        <hr className="my-1 border-gray-200 dark:border-zinc-700"/>
-                        <p className="font-medium text-gray-700 dark:text-gray-200">Detalhes da Entrega:</p>
-                        <p>Entregue para: {item.nome_pessoa_retirou || 'Não informado'}</p>
-                        <p>Matrícula: {item.matricula_recebedor || 'N/A'}</p>
-                        <p>Data da Entrega: {formatDate(item.data_entrega)}</p>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-end items-center pt-3 pb-3 px-4 border-t border-gray-200 dark:border-zinc-700">
-                  <Link href={`/dashboard/items/${item.id}`} passHref>
-                    <Button variant="outline" size="sm">Ver Detalhes</Button>
-                  </Link>
-                  <DropdownMenu onOpenChange={(open) => !open && setActiveDropdownId(null)}>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" onClick={() => { setItemToDeleteId(item.id); setIsConfirmDeleteDialogOpen(true); }}>...</Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditClick(item)}>Editar</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setItemToDeleteId(item.id); setIsConfirmDeleteDialogOpen(true); }}>Excluir</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardFooter>
-              </Card>
-            );
-          })}
+              </CardContent>
+              <CardFooter className="p-4 bg-gray-50 dark:bg-zinc-800/50 flex justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">Ações</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem>
+                      <Link href={`/dashboard/items/${item.id}/edit`} className="w-full">Editar</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        setItemToDeleteId(item.id);
+                        setIsConfirmDeleteDialogOpen(true);
+                      }}
+                      className="text-red-600"
+                    >
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-10">
+          <p>Nenhum item encontrado.</p>
         </div>
       )}
 
       <AlertDialog open={isConfirmDeleteDialogOpen} onOpenChange={setIsConfirmDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente o item.
+              Você tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setItemToDeleteId(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Confirmar</AlertDialogAction>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

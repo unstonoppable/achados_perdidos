@@ -46,6 +46,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserSearch from "@/components/admin/UserSearch";
+import axios from 'axios';
 
 // Interface para tipar os dados do item (copiada de items/page.tsx)
 interface Item {
@@ -82,8 +83,8 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Obter dados de autenticação diretamente do hook useAuth
-  const { userId: authUserId, isAdmin: authIsAdmin, isLoading: authIsLoading, isLoggedIn, isGuestView } = useAuth(); 
+  // Removendo isLoggedIn e isGuestView que não são usadas
+  const { userId: authUserId, isAdmin: authIsAdmin, isLoading: authIsLoading } = useAuth(); 
 
   const activeTab = searchParams.get('tab') || 'items';
 
@@ -192,11 +193,16 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
           description: data.message,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      let message = "Não foi possível conectar ao servidor.";
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
       toast.error("Erro de conexão", {
-        description: error.message || "Não foi possível conectar ao servidor.",
+        description: message,
       });
-      console.error('Erro na requisição para apagar item:', error);
     } finally {
       setActiveDropdownId(null);
       setIsConfirmDeleteDialogOpen(false);
