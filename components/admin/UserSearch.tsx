@@ -17,11 +17,16 @@ interface SearchedUser {
   tipo: 'aluno' | 'servidor' | 'admin';
 }
 
-function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(func: F, delay: number) {
+function debounce<Params extends unknown[]>(
+  func: (...args: Params) => void,
+  delay: number,
+): (...args: Params) => void {
   let timeout: NodeJS.Timeout;
-  return function(this: ThisParameterType<F>, ...args: Parameters<F>): void {
+  return (...args: Params) => {
     clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), delay);
+    timeout = setTimeout(() => {
+      func(...args);
+    }, delay);
   };
 }
 

@@ -115,7 +115,7 @@ const formSchema = z.object({
   descricao: z.string().min(10, "A descrição é obrigatória."),
   local: z.string().min(3, "O local é obrigatório."),
   status: z.enum(['encontrado', 'perdido']),
-  image: z.any().optional(), // Validação de arquivo é complexa com Zod, simplificada aqui
+  image: z.instanceof(FileList).optional(), // Validação de arquivo é complexa com Zod, simplificada aqui
 });
 
 const ItemsPage: React.FC = () => {

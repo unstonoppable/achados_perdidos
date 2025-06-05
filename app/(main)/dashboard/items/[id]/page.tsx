@@ -28,9 +28,7 @@ const ifcRed = "#C92A2A";
 const ifcGray = "#676767";
 const defaultBlue = "#3b82f6"; // Azul para Reivindicado
 const whiteText = "#FFFFFF";
-const darkText = "#333333"; // Para títulos e texto principal
-const lightGrayBackground = "#f0f0f0"; // Fundo para a área da imagem, se necessário
-const veryLightGrayBorder = "rgba(103, 103, 103, 0.1)"; // Borda muito sutil para divisórias internas
+
 
 // Interface para o item (deve ser consistente com a interface principal)
 interface ItemDetails {

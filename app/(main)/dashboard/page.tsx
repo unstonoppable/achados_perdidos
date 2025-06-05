@@ -83,7 +83,7 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Removendo isLoggedIn e isGuestView que não são usadas
+  // Obter dados de autenticação diretamente do hook useAuth
   const { userId: authUserId, isAdmin: authIsAdmin, isLoading: authIsLoading } = useAuth(); 
 
   const activeTab = searchParams.get('tab') || 'items';
@@ -142,13 +142,13 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
     if (searchTerm.trim() !== "") params.append("search", searchTerm.trim());
     
     try {
-      const { data } = await api.get('/items', { params });
+      const { data } = await api.get<{ success: boolean; items: Item[]; message?: string; }>('/items', { params });
 
       if (data.success) {
-        const fetchedItems = (data.items || []).map((item: Item) => ({ ...item, imageError: false }));
+        const fetchedItems = (data.items || []).map((item) => ({ ...item, imageError: false }));
         setItems(fetchedItems);
         if (fetchedItems.length > 0) {
-          console.log("Itens carregados (amostra com id_usuario_encontrou e status):", fetchedItems.slice(0, 3).map((i: Item) => ({id: i.id, nome: i.nome_item, user_encontrou: i.id_usuario_encontrou, categoria: i.categoria, status: i.status })));
+          console.log("Itens carregados (amostra com id_usuario_encontrou e status):", fetchedItems.slice(0, 3).map((i) => ({id: i.id, nome: i.nome_item, user_encontrou: i.id_usuario_encontrou, categoria: i.categoria, status: i.status })));
         }
       } else {
         setItems([]);
