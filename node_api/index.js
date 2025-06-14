@@ -10,7 +10,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: 'http://localhost:3000', // Permite requisições do seu frontend
+  origin: true, // Permite requisições do mesmo domínio
   credentials: true // Permite o envio de cookies
 }));
 app.use(express.json());
@@ -19,13 +19,13 @@ app.use(express.urlencoded({ extended: true }));
 // Session
 // TODO: Mova o segredo da sessão para uma variável de ambiente em um arquivo .env
 app.use(session({
-  secret: 'mysecretkey', // Em um ambiente de produção, use uma variável de ambiente
+  secret: process.env.SESSION_SECRET || 'mysecretkey',
   resave: false,
   saveUninitialized: true,
   cookie: {
-    secure: false, // Defina como true se estiver usando HTTPS
+    secure: process.env.NODE_ENV === 'production', // true em produção
     httpOnly: true,
-    sameSite: 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
 
