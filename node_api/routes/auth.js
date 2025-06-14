@@ -4,6 +4,12 @@ const db = require('../config/db');
 
 const router = express.Router();
 
+// Middleware para logging de rotas de autenticação
+router.use((req, res, next) => {
+  console.log('Auth Route:', req.method, req.path);
+  next();
+});
+
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -48,6 +54,8 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
+  console.log('Recebendo requisição de registro:', req.body);
+  
   const { nome, email, senha, confirmar_senha, matricula } = req.body;
 
   // Validações

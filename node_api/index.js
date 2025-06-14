@@ -38,6 +38,12 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
+// Middleware para logging de requisições
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -63,6 +69,25 @@ app.use('/api/users', userRoutes);
 // Rota de teste
 app.get('/', (req, res) => {
   res.send('API do Achados e Perdidos está funcionando!');
+});
+
+// Middleware para tratamento de erros
+app.use((err, req, res, next) => {
+  console.error('Erro:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Erro interno do servidor',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// Middleware para rotas não encontradas
+app.use((req, res) => {
+  console.log('Rota não encontrada:', req.method, req.url);
+  res.status(404).json({
+    success: false,
+    message: 'Rota não encontrada'
+  });
 });
 
 const PORT = process.env.PORT || 3001; // Mudei a porta para 3001 para não conflitar com o frontend
