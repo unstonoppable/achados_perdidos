@@ -169,7 +169,7 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
         const fetchedItems = (data.items || []).map((item: Item) => ({ ...item, imageError: false }));
         setItems(fetchedItems);
         if (fetchedItems.length > 0) {
-          console.log("Itens carregados (amostra com id_usuario_encontrou e status):", fetchedItems.slice(0, 3).map((i: Item) => ({id: i.id, nome: i.nome_item, user_encontrou: i.id_usuario_encontrou, categoria: i.categoria, status: i.status })));
+          // Removido console.log de debug
         }
       } else {
         setItems([]);
