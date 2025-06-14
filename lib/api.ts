@@ -18,6 +18,8 @@ const api = axios.create({
 // Interceptor para garantir que não haja barras duplas nas URLs
 api.interceptors.request.use(config => {
   if (config.url) {
+    // Remove o prefixo /api se existir, pois já está incluído no rewrite
+    config.url = config.url.replace(/^\/api/, '');
     config.url = config.url.replace(/\/+/g, '/');
   }
   return config;
