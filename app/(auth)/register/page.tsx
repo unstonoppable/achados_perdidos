@@ -49,6 +49,7 @@ export default function RegisterPage() {
         email: values.email,
         matricula: values.matricula,
         senha: values.password,
+        confirmar_senha: values.confirmPassword
       });
 
       if (data.success) {

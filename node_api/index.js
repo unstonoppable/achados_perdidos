@@ -16,6 +16,17 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
+// Middleware para tratar requisições OPTIONS
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['set-cookie'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
+
 // Middlewares
 app.use(cors({
   origin: allowedOrigins,
