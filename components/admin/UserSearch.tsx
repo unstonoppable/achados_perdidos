@@ -106,7 +106,9 @@ const UserSearch = () => {
             onChange={onInputChange}
             className="flex-grow"
           />
-          <Button type="button" onClick={() => handleSearch(searchTerm)} disabled={isLoading}>
+          <Button type="button" onClick={() => {
+            handleSearch(searchTerm);
+          }} disabled={isLoading}>
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           </Button>
         </div>

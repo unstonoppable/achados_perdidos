@@ -419,13 +419,17 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-800 shadow-md rounded-md border-gray-200 dark:border-zinc-700">
                       <DropdownMenuItem 
-                        onClick={() => router.push(`/dashboard/items/${item.id}/edit`)}
+                        onClick={() => {
+                          router.push(`/dashboard/items/${item.id}/edit`);
+                        }}
                         className="flex items-center px-3 py-2 text-sm text-blue-600 hover:!bg-blue-50 dark:text-blue-400 dark:hover:!bg-blue-500/10 cursor-pointer transition-colors"
                       >
                         <Edit3 className="mr-2 h-4 w-4" /> Ver / Editar
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handleDeleteRequest(item.id)} 
+                        onClick={() => {
+                          handleDeleteRequest(item.id);
+                        }} 
                         className="flex items-center px-3 py-2 text-sm text-red-500 hover:!bg-red-50 dark:hover:!bg-red-500/10 cursor-pointer transition-colors"
                       >
                         <Trash2 className="mr-2 h-4 w-4" /> Excluir
@@ -447,7 +451,9 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
     }
     
     return (
-       <Tabs value={activeTab} onValueChange={(tab) => router.push(`/dashboard?tab=${tab}`)} className="space-y-4">
+       <Tabs value={activeTab} onValueChange={(tab) => {
+        router.push(`/dashboard?tab=${tab}`);
+      }} className="space-y-4">
         <TabsList>
           <TabsTrigger value="items">Itens</TabsTrigger>
           {isAdmin && <TabsTrigger value="users">Administração de Usuários</TabsTrigger>}
@@ -470,7 +476,11 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
                     placeholder="Pesquisar por nome ou descrição..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && fetchItems()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        fetchItems();
+                      }
+                    }}
                     className="pr-8"
                   />
                 </div>
@@ -485,7 +495,9 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={() => fetchItems()}>
+                <Button onClick={() => {
+                  fetchItems();
+                }}>
                   <Search className="h-4 w-4 mr-2" /> Pesquisar
                 </Button>
               </div>
@@ -523,7 +535,9 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
 
       <AlertDialog open={isConfirmDeleteDialogOpen} onOpenChange={setIsConfirmDeleteDialogOpen}>
         <AlertDialogContent 
-          onCloseAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+          }}
           className="bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 shadow-xl rounded-lg"
         >
           <AlertDialogHeader>

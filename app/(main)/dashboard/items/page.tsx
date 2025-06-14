@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import api from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 // Cores IFC (Adicionadas)
 const ifcGreen = "#98EE6F";
@@ -128,6 +129,7 @@ const ItemsPage: React.FC = () => {
   const [itemToDeleteId, setItemToDeleteId] = useState<number | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const router = useRouter();
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
@@ -255,7 +257,9 @@ const ItemsPage: React.FC = () => {
                       objectFit: "cover",
                     }}
                     width="300"
-                    onError={() => handleImageError(item.id)}
+                    onError={() => {
+                      handleImageError(item.id);
+                    }}
                   />
                 ) : (
                   <div className="w-full h-48 bg-gray-200 dark:bg-zinc-800 flex items-center justify-center">
@@ -289,8 +293,12 @@ const ItemsPage: React.FC = () => {
                     <Button variant="outline">Ações</Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>
-                      <Link href={`/dashboard/items/${item.id}/edit`} className="w-full">Editar</Link>
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        router.push(`/dashboard/items/${item.id}/edit`);
+                      }}
+                    >
+                      Editar
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => {
