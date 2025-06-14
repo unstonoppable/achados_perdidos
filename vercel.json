@@ -7,7 +7,10 @@
     },
     {
       "src": "package.json",
-      "use": "@vercel/next"
+      "use": "@vercel/next",
+      "config": {
+        "nodeVersion": "18.x"
+      }
     }
   ],
   "rewrites": [
