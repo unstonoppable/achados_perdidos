@@ -3,5 +3,5 @@
 // Exemplo de action (a ser implementado)
 export async function placeholderAction() {
   'use server';
-  console.log("Action executada!");
+  // console.log("Action executada!");
 } 

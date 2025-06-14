@@ -123,7 +123,7 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
   const isAdmin = authIsAdmin === true; 
   
   // Log para verificar os valores usados para permissão
-  console.log("DashboardPageContent - Auth State Utilizado (do hook):", { loggedInUserId, isAdmin });
+  // console.log("DashboardPageContent - Auth State Utilizado (do hook):", { loggedInUserId, isAdmin });
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
