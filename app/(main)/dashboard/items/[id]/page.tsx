@@ -57,6 +57,14 @@ interface SearchedUser {
   matricula: string | null; 
 }
 
+interface ApiErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Função de debounce
@@ -112,7 +120,7 @@ const ItemDetailPage = () => {
         }
       } catch (error: unknown) {
         const message = error && typeof error === 'object' && 'response' in error
-          ? (error.response as { data?: { message?: string } })?.data?.message || 'Erro de conexão.'
+          ? (error as ApiErrorResponse).response?.data?.message || 'Erro de conexão.'
           : 'Erro de conexão.';
         toast.error('Erro no servidor', { description: message });
         router.push('/dashboard');
@@ -193,7 +201,7 @@ const ItemDetailPage = () => {
       }
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'response' in error
-        ? (error.response as { data?: { message?: string } })?.data?.message || 'Erro de conexão.'
+        ? (error as ApiErrorResponse).response?.data?.message || 'Erro de conexão.'
         : 'Erro de conexão.';
       toast.error('Erro no servidor', { description: message });
     } finally {

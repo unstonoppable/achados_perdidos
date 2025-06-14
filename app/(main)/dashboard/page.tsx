@@ -57,6 +57,14 @@ interface ItemsApiResponse extends ApiResponse {
   items: Item[];
 }
 
+interface ApiErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
 // Interface para tipar os dados do item (copiada de items/page.tsx)
 interface Item {
   id: number;
@@ -134,44 +142,43 @@ function DashboardPageContent(/* { authUserId, authIsAdmin }: DashboardPageConte
     }
   }, [searchParams, categoryFilter, statusFilter]);
 
-  const handleImageError = useCallback((itemId: number) => {
-    setItems(currentItems => 
-      currentItems.map(item => 
-        item.id === itemId ? { ...item, imageError: true } : item
-      )
-    );
-  }, []);
+  const handleImageError = (itemId: number) => {
+    setItems((prevItems: Item[]): Item[] => {
+      const newItems: Item[] = prevItems.map((item: Item): Item => {
+        if (item.id === itemId) {
+          return { ...item, imageError: true };
+        }
+        return item;
+      });
+      return newItems;
+    });
+  };
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    const params = new URLSearchParams();
-    if (statusFilter && statusFilter !== "todos") params.append("status", statusFilter);
-    if (categoryFilter && categoryFilter !== "todos") params.append("category", categoryFilter);
-    if (searchTerm.trim() !== "") params.append("search", searchTerm.trim());
-    
     try {
-      const { data } = await api.get<ItemsApiResponse>('/items', { params });
-
+      const { data } = await api.get('/items', {
+        params: {
+          search: searchTerm,
+          category: categoryFilter !== 'todos' ? categoryFilter : undefined,
+          status: statusFilter || undefined
+        }
+      });
       if (data.success) {
-        const fetchedItems = (data.items || []).map((item) => ({ ...item, imageError: false }));
+        const fetchedItems = (data.items || []).map((item: Item) => ({ ...item, imageError: false }));
         setItems(fetchedItems);
         if (fetchedItems.length > 0) {
-          console.log("Itens carregados (amostra com id_usuario_encontrou e status):", fetchedItems.slice(0, 3).map((i) => ({id: i.id, nome: i.nome_item, user_encontrou: i.id_usuario_encontrou, categoria: i.categoria, status: i.status })));
+          console.log("Itens carregados (amostra com id_usuario_encontrou e status):", fetchedItems.slice(0, 3).map((i: Item) => ({id: i.id, nome: i.nome_item, user_encontrou: i.id_usuario_encontrou, categoria: i.categoria, status: i.status })));
         }
       } else {
         setItems([]);
-        setError(data.message || "Falha ao buscar os itens.");
+        setError(data.message || "Erro ao carregar itens");
       }
-    } catch (err: unknown) {
-      setItems([]);
-      console.error("Erro na requisição de listagem de itens:", err);
-      let message = "Erro ao conectar ao servidor para buscar itens.";
-      if (err instanceof Error) {
-        message = err.message;
-      } else if (typeof err === 'string') {
-        message = err;
-      }
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error
+        ? (error as ApiErrorResponse).response?.data?.message || 'Erro de conexão.'
+        : 'Erro de conexão.';
       setError(message);
     } finally {
       setIsLoading(false);
