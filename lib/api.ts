@@ -8,7 +8,7 @@ export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhos
 export const UPLOADS_URL = `${API_BASE_URL}/uploads`;
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/api`,
   withCredentials: true, // Essencial para enviar cookies de sessão
   headers: {
     'Content-Type': 'application/json'
