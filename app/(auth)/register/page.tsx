@@ -75,7 +75,7 @@ export default function RegisterPage() {
     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
       <div className="hidden bg-muted lg:block">
         <Image
-          src="/placeholder.svg"
+          src="/img1.svg"
           alt="Imagem de fundo"
           width="1920"
           height="1080"
