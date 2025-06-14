@@ -53,9 +53,6 @@ interface ApiResponse {
   success: boolean;
   message?: string;
 }
-interface ItemsApiResponse extends ApiResponse {
-  items: Item[];
-}
 
 interface ApiErrorResponse {
   response?: {

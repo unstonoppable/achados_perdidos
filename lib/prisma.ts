@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
