@@ -8,11 +8,32 @@ const userRoutes = require('./routes/users');
 
 const app = express();
 
+// Lista de domínios permitidos
+const allowedOrigins = [
+  'https://achados-perdidos-tau.vercel.app',
+  'https://achados-perdidos-byai5x5kn-unstonoppables-projects.vercel.app',
+  'http://localhost:3000'
+];
+
 // Middlewares
 app.use(cors({
-  origin: true, // Permite requisições do mesmo domínio
-  credentials: true // Permite o envio de cookies
+  origin: function(origin, callback) {
+    // Permite requisições sem origin (como mobile apps ou curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'A política de CORS para este site não permite acesso da origem especificada.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
