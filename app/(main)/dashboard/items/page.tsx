@@ -14,11 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Image from "next/image";
-import { Box, ImageOff, PackageCheck, PackageSearch, CalendarClock } from "lucide-react"; // Adicionado CalendarClock
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import api from '@/lib/api';
+import { Box, ImageOff, PackageCheck, PackageSearch, CalendarClock } from "lucide-react";
 import { toast } from 'sonner';
 import axios from 'axios';
 import {
@@ -37,6 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import api from '@/lib/api';
 
 // Cores IFC (Adicionadas)
 const ifcGreen = "#98EE6F";
@@ -121,36 +118,14 @@ const getStatusPresentation = (status: Item['status']) => {
   }
 };
 
-const formSchema = z.object({
-  nome: z.string().min(3, "O nome do item é obrigatório."),
-  descricao: z.string().min(10, "A descrição é obrigatória."),
-  local: z.string().min(3, "O local é obrigatório."),
-  status: z.enum(['encontrado', 'perdido']),
-  image: z.instanceof(FileList).optional(), // Validação de arquivo é complexa com Zod, simplificada aqui
-});
-
 const ItemsPage: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingItemId, setEditingItemId] = useState<number | null>(null);
-  const [isFormVisible, setIsFormVisible] = useState(false);
   
   // Estados para o diálogo de confirmação de exclusão
   const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState<number | null>(null);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      nome: '',
-      descricao: '',
-      local: '',
-      status: 'encontrado',
-    }
-  });
-
-  const { reset, setValue, formState: { isSubmitting } } = form;
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -164,7 +139,7 @@ const ItemsPage: React.FC = () => {
       } else {
         setError("Não foi possível carregar os itens.");
       }
-    } catch (err) {
+    } catch {
       setError("Erro de conexão ao buscar itens.");
     } finally {
       setIsLoading(false);
@@ -190,65 +165,6 @@ const ItemsPage: React.FC = () => {
     return date.toLocaleDateString("pt-BR", { year: 'numeric', month: '2-digit', day: '2-digit' });
   };
 
-  const handleEditClick = (item: Item) => {
-    setEditingItemId(item.id);
-    setValue('nome', item.nome_item);
-    setValue('descricao', item.descricao);
-    setValue('local', item.local_encontrado);
-    setValue('status', item.status as 'encontrado' | 'perdido');
-    setIsFormVisible(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingItemId(null);
-    reset(); // Limpa o formulário
-    setIsFormVisible(false);
-  };
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const formData = new FormData();
-    formData.append('nome', values.nome);
-    formData.append('descricao', values.descricao);
-    formData.append('local', values.local);
-    formData.append('status', values.status);
-    if (values.image && values.image[0]) {
-      formData.append('image', values.image[0]);
-    }
-
-    try {
-      let response;
-      if (editingItemId) {
-        // Modo de Edição
-        response = await api.put<ApiResponse>(`/items/${editingItemId}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      } else {
-        // Modo de Criação
-        response = await api.post<ApiResponse>('/items', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      }
-
-      const { data } = response;
-      if (data.success) {
-        toast.success(editingItemId ? 'Item atualizado com sucesso!' : 'Item cadastrado com sucesso!');
-        handleCancelEdit();
-        fetchItems(); // Agora esta chamada é válida
-      } else {
-        toast.error('Erro ao salvar', { description: data.message });
-      }
-    } catch (error: unknown) {
-      let message = 'Erro de conexão com o servidor.';
-      if (axios.isAxiosError(error) && error.response?.data?.message) {
-        message = error.response.data.message;
-      } else if (error instanceof Error) {
-        message = error.message;
-      }
-      toast.error('Erro no servidor', { description: message });
-    }
-  };
-
   const handleDelete = async () => {
     if (!itemToDeleteId) return;
     try {
@@ -267,14 +183,6 @@ const ItemsPage: React.FC = () => {
       setIsConfirmDeleteDialogOpen(false);
       setItemToDeleteId(null);
     }
-  };
-
-  const handleAddNewClick = () => {
-    // setIsFormVisible(true);
-    // setEditingItemId(null);
-    // reset();
-    // window.scrollTo({ top: 0, behavior: 'smooth' });
-    // TODO: Idealmente, navegar para a página /dashboard/items/new
   };
 
   if (isLoading) {

@@ -63,8 +63,10 @@ export default function RegisterPage() {
           description: data.message || 'Não foi possível criar sua conta.',
         });
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Erro de conexão com o servidor.";
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error
+        ? (error.response as { data?: { message?: string } })?.data?.message || "Erro de conexão com o servidor."
+        : "Erro de conexão com o servidor.";
       toast.error('Erro no servidor', { description: message });
     }
   };

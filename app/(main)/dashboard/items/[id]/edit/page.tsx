@@ -26,7 +26,7 @@ const formSchema = z.object({
   categoria: z.string().optional(),
   data_encontrado: z.string().min(1, "A data é obrigatória."),
   turno_encontrado: z.string().optional(),
-  image: z.any().optional(),
+  image: z.instanceof(FileList).optional(),
 });
 
 const EditItemPage = () => {
@@ -67,7 +67,7 @@ const EditItemPage = () => {
           toast.error("Item não encontrado", { description: data.message });
           router.push('/dashboard');
         }
-      } catch (error) {
+      } catch {
         toast.error('Erro ao buscar dados do item.');
         router.push('/dashboard');
       }
@@ -98,8 +98,10 @@ const EditItemPage = () => {
       } else {
         toast.error('Erro ao atualizar item', { description: data.message });
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro de conexão.';
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error
+        ? (error.response as { data?: { message?: string } })?.data?.message || 'Erro de conexão.'
+        : 'Erro de conexão.';
       toast.error('Erro no servidor', { description: message });
     }
   };

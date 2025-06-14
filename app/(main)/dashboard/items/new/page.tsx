@@ -22,7 +22,7 @@ const formSchema = z.object({
   local: z.string().min(3, "O local onde o item foi achado/perdido é obrigatório."),
   status: z.enum(['achado', 'perdido']),
   categoria: z.string().optional(),
-  image: z.any().optional(),
+  image: z.instanceof(FileList).optional(),
 });
 
 const NewItemPage = () => {
@@ -64,8 +64,10 @@ const NewItemPage = () => {
       } else {
         toast.error('Erro ao cadastrar item', { description: data.message });
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Erro de conexão com o servidor.';
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error
+        ? (error.response as { data?: { message?: string } })?.data?.message || 'Erro de conexão com o servidor.'
+        : 'Erro de conexão com o servidor.';
       toast.error('Erro no servidor', { description: message });
     }
   };

@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardFooter
 } from '@/components/ui/card';
-import { ArrowLeft, ImageOff, AlertTriangle, Info, PackageCheck, PackageSearch, Box, ShieldCheck, Loader2, Calendar, Clock, MapPin, User, Tag, Edit3, Trash2 } from 'lucide-react';
+import { ArrowLeft, ImageOff, AlertTriangle, Calendar, Clock, MapPin, User, Tag, Edit3, Loader2, ShieldCheck } from 'lucide-react';
 import  {useAuth}  from "@/app/(main)/MainLayoutClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,6 @@ import { toast } from 'sonner';
 const ifcGreen = "#98EE6F";
 const ifcRed = "#C92A2A";
 const ifcGray = "#676767";
-const defaultBlue = "#3b82f6"; // Azul para Reivindicado
 const whiteText = "#FFFFFF";
 
 
@@ -57,55 +56,6 @@ interface SearchedUser {
   nome: string;
   matricula: string | null; 
 }
-
-const formatDate = (dateString?: string) => {
-  if (!dateString) return "Não informado";
-  try {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      year: 'numeric', month: 'long', day: 'numeric', 
-      hour: '2-digit', minute: '2-digit' // Adicionando hora e minuto se disponível e relevante
-    });
-  } catch {
-    return dateString; 
-  }
-};
-
-// Função para obter estilos de status (adaptada do dashboard)
-const getStatusPresentation = (status: ItemDetails['status']) => {
-  let bgColor = ifcGray;
-  let icon = <Info className="inline-block mr-1.5 h-4 w-4 align-middle" />;
-
-  switch (status) {
-    case 'achado':
-      bgColor = ifcGreen;
-      icon = <PackageCheck className="inline-block mr-1.5 h-4 w-4 align-middle" />;
-      break;
-    case 'perdido':
-      bgColor = ifcRed;
-      icon = <PackageSearch className="inline-block mr-1.5 h-4 w-4 align-middle" />;
-      break;
-    case 'reivindicado':
-      bgColor = defaultBlue;
-      icon = <Box className="inline-block mr-1.5 h-4 w-4 align-middle" />;
-      break;
-    case 'entregue':
-      bgColor = ifcGray;
-      icon = <PackageCheck className="inline-block mr-1.5 h-4 w-4 align-middle" />;
-      break;
-    case 'expirado':
-      bgColor = ifcRed;
-      icon = <PackageSearch className="inline-block mr-1.5 h-4 w-4 align-middle" />;
-      break;
-  }
-  // Para o texto do status na lista de detalhes, usamos a cor do fundo como cor do texto e fundo transparente.
-  // O badge no header terá fundo colorido e texto branco.
-  return { 
-    badgeBgColor: bgColor,
-    badgeTextColor: whiteText,
-    detailTextColor: bgColor, // Cor do status no detalhe será a própria cor IFC
-    icon 
-  };
-};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -160,8 +110,11 @@ const ItemDetailPage = () => {
           toast.error("Item não encontrado", { description: data.message });
           router.push('/dashboard');
         }
-      } catch (error) {
-        toast.error("Erro ao carregar o item.");
+      } catch (error: unknown) {
+        const message = error && typeof error === 'object' && 'response' in error
+          ? (error.response as { data?: { message?: string } })?.data?.message || 'Erro de conexão.'
+          : 'Erro de conexão.';
+        toast.error('Erro no servidor', { description: message });
         router.push('/dashboard');
       } finally {
         setLoading(false);
@@ -194,7 +147,7 @@ const ItemDetailPage = () => {
           setSearchedUsers([]);
           setUserSearchError(result.message || "Erro ao buscar usuários.");
         }
-      } catch (err) {
+      } catch {
         setSearchedUsers([]);
         setUserSearchError("Falha na conexão ao buscar usuários.");
       } finally {
@@ -238,10 +191,11 @@ const ItemDetailPage = () => {
       } else {
         setDeliveryError(response.data.message || "Falha ao marcar o item como entregue.");
       }
-    } catch (err: any) {
-      console.error("Erro ao marcar item como entregue:", err);
-      const message = err.response?.data?.message || err.message || "Erro de conexão ao tentar marcar como entregue.";
-      setDeliveryError(message);
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error
+        ? (error.response as { data?: { message?: string } })?.data?.message || 'Erro de conexão.'
+        : 'Erro de conexão.';
+      toast.error('Erro no servidor', { description: message });
     } finally {
       setIsSubmittingDelivery(false);
     }
@@ -284,8 +238,6 @@ const ItemDetailPage = () => {
       </Card>
     );
   }
-
-  const statusInfo = getStatusPresentation(item.status);
 
   const canModify = isAdmin || userId === item.id_usuario_encontrou;
 

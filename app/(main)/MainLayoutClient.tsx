@@ -44,7 +44,6 @@ export const useAuth = () => {
   const [userId, setUserId] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
-  const router = useRouter();
   const searchParams = useSearchParams(); 
 
   const [isGuestView, setIsGuestView] = useState(false);
