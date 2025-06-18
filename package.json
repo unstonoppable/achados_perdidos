@@ -10,7 +10,7 @@
     "setup-db": "node node_api/scripts/setup-db.js"
   },
   "engines": {
-    "node": "22.x"
+    "node": "18.x"
   },
   "vercel": {
     "nodeVersion": "18.x"
@@ -65,6 +65,7 @@
     "@types/pg": "^8.15.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
     "tailwindcss": "^4",

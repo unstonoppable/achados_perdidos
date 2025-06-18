@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Configurações para resolver problemas de build na Vercel
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
+  
+  // Configurações para fontes
+  optimizeFonts: true,
+  
+  // Configurações para imagens
   images: {
     remotePatterns: [
       {
