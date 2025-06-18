@@ -53,6 +53,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/file/**', // Permitindo qualquer imagem sob /file/
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      },
       // Adicione outros domínios aqui se necessário
       // Exemplo para imagens de placeholder ou outras fontes:
       // {
@@ -61,14 +67,7 @@ const nextConfig: NextConfig = {
       // },
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/node_api/:path*',
-        destination: 'http://localhost:3001/api/:path*',
-      },
-    ];
-  },
+ 
 };
 
 export default nextConfig;

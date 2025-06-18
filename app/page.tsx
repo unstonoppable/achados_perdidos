@@ -70,7 +70,7 @@ export default function HomePage() {
           <section 
             className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-8 lg:gap-12 px-6 md:px-10 lg:px-16 py-12 md:py-16 lg:py-20 bg-white dark:bg-neutral-900 rounded-t-lg shadow-none"
           >
-            <div className="md:w-1/2 lg:w-[48%] text-left">
+            <div className="order-2 md:order-1 md:w-1/2 lg:w-[48%] text-left">
               <h1 
                 className="text-4xl lg:text-5xl xl:text-[54px] font-black leading-tight mb-5 md:mb-6"
                 style={{ color: colors.darkText }} // fontFamily removida
@@ -93,13 +93,14 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
-            <div className="md:w-1/2 lg:w-[52%] mt-8 md:mt-0 flex justify-center md:justify-end">
+            <div className="order-1 md:order-2 md:w-1/2 lg:w-[52%] mt-8 md:mt-0 flex justify-center md:justify-end">
               <Image 
                 src="/img1.svg" 
                 alt="Ilustração de pessoas procurando itens"
                 width={700}
                 height={567}
-                className="max-w-full h-auto lg:max-w-2xl hover:scale-105 transition-transform duration-300 ease-in-out"
+                className="w-full h-auto max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl hover:scale-105 transition-transform duration-300 ease-in-out"
+                priority
               />
             </div>
           </section>
@@ -110,7 +111,7 @@ export default function HomePage() {
           </div>
 
           <section className="container mx-auto flex flex-col md:flex-row-reverse items-center justify-between gap-8 lg:gap-12 px-6 md:px-10 lg:px-16 py-12 md:py-16 bg-white dark:bg-neutral-900 shadow-none mt-12 md:mt-16 lg:mt-20 xl:mt-24 hover:shadow-lg transition-shadow duration-300 ease-in-out rounded-lg">
-            <div className="md:w-1/2 lg:w-[55%] text-left">
+            <div className="order-2 md:order-1 md:w-1/2 lg:w-[55%] text-left">
               <h2 
                 className="text-3xl lg:text-4xl xl:text-[50px] font-bold mb-5 md:mb-6 leading-tight"
                 style={{ color: colors.darkText }} // fontFamily removida
@@ -132,13 +133,13 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <div className="md:w-1/2 lg:w-[45%] mt-8 md:mt-0 flex justify-center md:justify-start">
+            <div className="order-1 md:order-2 md:w-1/2 lg:w-[45%] mt-8 md:mt-0 flex justify-center md:justify-start">
               <Image 
                 src="/img2.svg" 
                 alt="Ilustração de sistema e organização"
                 width={620} 
                 height={620} 
-                className="max-w-full h-auto lg:max-w-xl hover:scale-105 transition-transform duration-300 ease-in-out"
+                className="w-full h-auto max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl hover:scale-105 transition-transform duration-300 ease-in-out"
               />
             </div>
           </section>
@@ -165,13 +166,13 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
-              <div className="md:w-1/2 lg:w-[55%] mt-8 md:mt-0 flex justify-center md:justify-end">
+              <div className="order-1 md:order-2 md:w-1/2 lg:w-[55%] mt-8 md:mt-0 flex justify-center md:justify-end">
                 <Image 
                   src="/img3.svg" 
                   alt="Ilustração da equipe"
                   width={680} 
                   height={510} 
-                  className="max-w-full h-auto lg:max-w-2xl hover:scale-105 transition-transform duration-300 ease-in-out"
+                  className="w-full h-auto max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl hover:scale-105 transition-transform duration-300 ease-in-out"
                 />
               </div>
             </div>

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
 import api from '@/lib/api';
+import axios from 'axios';
 
 // Configurar a fonte IBM Plex Sans
 const ibmPlexSans = IBM_Plex_Sans({
@@ -49,7 +50,7 @@ export const useAuth = () => {
   const [isGuestView, setIsGuestView] = useState(false);
 
   useEffect(() => {
-    const guestViewParam = searchParams.get('view');
+    const guestViewParam = searchParams?.get('view') ?? '';
     const isGuest = guestViewParam === 'guest';
     setIsGuestView(isGuest);
 
@@ -66,15 +67,18 @@ export const useAuth = () => {
         const { data } = await api.get('/auth/me');
         if (data.success && data.user) {
           setIsLoggedIn(true);
-          setUserName(data.user.name);
+          setUserName(data.user.nome);
           setUserId(data.user.id);
-          setIsAdmin(data.user.isAdmin);
-          setUserPhotoUrl(data.user.photoUrl);
+          setIsAdmin(data.user.tipo_usuario === 'admin');
+          setUserPhotoUrl(data.user.foto_perfil_url);
         } else {
           setIsLoggedIn(false);
         }
       } catch (error) {
-        console.error("Erro ao verificar sessão:", error);
+        // Só loga se não for 401
+        if (!(axios.isAxiosError(error) && error.response?.status === 401)) {
+          console.error("Erro ao verificar sessão:", error);
+        }
         setIsLoggedIn(false);
       } finally {
         setIsLoading(false);
@@ -96,7 +100,7 @@ const TARGET_TEXT_COLOR = "#3D3D3D";
 interface NavItem {
   id: string;
   hrefBase: string;
-  filterStatus?: "achado" | "perdido" | "entregue" | "expirado" | "todos";
+  filterStatus?: "achado" | "perdido" | "entregue" | "expirado" | "todos" | "postagens";
   icon: React.ComponentType<LucideProps>; // Tipo de componente Icon (ex: Newspaper)
   label: string;
 }
@@ -116,9 +120,15 @@ const NavLink: React.FC<NavLinkProps> = React.memo(({
   currentStatusFilter, 
   displayMode
 }) => {
-  const href = filterStatus && filterStatus !== "todos" ? `${hrefBase}?status=${filterStatus}` : hrefBase;
+  const href = filterStatus ? `${hrefBase}?status=${filterStatus}` : hrefBase;
   const isActive = currentPathname === hrefBase && 
-                   (filterStatus === "todos" ? (currentStatusFilter === null || currentStatusFilter === "todos") : currentStatusFilter === filterStatus);
+                   (filterStatus 
+                     ? (filterStatus === "todos"
+                         ? currentStatusFilter === "todos"
+                         : filterStatus === "postagens"
+                         ? (!currentStatusFilter || currentStatusFilter === "postagens")
+                         : currentStatusFilter === filterStatus)
+                     : false); // Para links sem filtro, nunca ativo
   
   // Adiciona displayName para React.memo
   NavLink.displayName = 'NavLink';
@@ -173,12 +183,11 @@ interface AuthPassingProps {
 }
 
 const initialNavItems: NavItem[] = [
-  // Dashboard (Home) - opcional, se quiser um link para /dashboard sem filtros
-  // { id: "dashboard", hrefBase: "/dashboard", icon: Home, label: "Início" }, 
+  { id: "all_posts", hrefBase: "/dashboard", filterStatus: "postagens", icon: History, label: "Postagens" },
   { id: "posts", hrefBase: "/dashboard", filterStatus: "achado", icon: Newspaper, label: "Itens Achados" },
   { id: "lost_items", hrefBase: "/dashboard", filterStatus: "perdido", icon: PackageSearch, label: "Itens Perdidos" },
-  { id: "expired", hrefBase: "/dashboard", filterStatus: "expirado", icon: CalendarClock, label: "Itens Expirados" },
   { id: "all", hrefBase: "/dashboard", filterStatus: "todos", icon: History, label: "Todos os Registros" },
+  { id: "expired", hrefBase: "/dashboard", filterStatus: "expirado", icon: CalendarClock, label: "Itens Expirados" },
 ];
 
 export default function MainLayoutClient({ children }: { children: React.ReactNode }) {
@@ -186,7 +195,7 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
   const router = useRouter();
   const currentPathname = usePathname();
   const searchParamsHook = useSearchParams(); // Renomeado para evitar conflito
-  const currentStatusFilter = searchParamsHook.get('status');
+  const currentStatusFilter = searchParamsHook?.get('status') ?? '';
 
   const handleLogout = useCallback(async () => {
     try {
@@ -213,13 +222,14 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
     });
   }, [children, userId, isAdmin]);
 
-  if (isLoading) {
-    return <div className={`flex items-center justify-center min-h-screen bg-gray-100 dark:bg-zinc-900 ${ibmPlexSans.className}`}><p className="text-lg" style={{ color: TARGET_TEXT_COLOR }}>Carregando...</p></div>;
-  }
-  
-  if (!isLoggedIn && !isGuestView) {
-    router.push('/'); 
-    return null; 
+  useEffect(() => {
+    if (!isLoggedIn && !isGuestView && !isLoading) {
+      router.push('/');
+    }
+  }, [isLoggedIn, isGuestView, isLoading, router]);
+
+  if (!isLoggedIn && !isGuestView && !isLoading) {
+    return null;
   }
 
   const SIDEBAR_WIDTH_PX = 357;
@@ -258,7 +268,7 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
               <Button variant="ghost" className="p-0 rounded-full h-10 w-10">
                 {userPhotoUrl ? (
                   <Image 
-                    src={userPhotoUrl ? `https://achados-perdidos.infinityfreeapp.com/php_api/uploads/${userPhotoUrl}` : "/user-placeholder.png"}
+                    src={userPhotoUrl || "/user-placeholder.png"}
                     alt={userName || 'Foto de perfil'}
                     width={40}
                     height={40} 
@@ -320,7 +330,7 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
                 <NavLink 
                   key={item.id} 
                   {...item} 
-                  currentPathname={currentPathname}
+                  currentPathname={currentPathname ?? ''}
                   currentStatusFilter={currentStatusFilter}
                   displayMode="desktop"
                 />
@@ -328,62 +338,76 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
             </nav>
           </div>
           <div className="pt-5 mt-5 px-2 pb-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="flex items-center gap-x-3.5 mb-4 px-2 py-2 w-full justify-start hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg text-left h-auto"
-                >
-                  {userPhotoUrl ? (
-                    <Image 
-                      src={userPhotoUrl ? `https://achados-perdidos.infinityfreeapp.com/php_api/uploads/${userPhotoUrl}` : "/user-placeholder.png"}
-                      alt={userName || 'Foto de perfil'}
-                      width={44} 
-                      height={44} 
-                      className="rounded-full object-cover h-11 w-11 shrink-0" 
-                    />
-                  ) : (
-                    <UserCircle className="h-11 w-11 text-gray-500 dark:text-gray-400 shrink-0" />
-                  )}
-                  <div className="flex flex-col">
-                    <p className='text-base font-semibold truncate max-w-[200px]' style={{ color: TARGET_TEXT_COLOR }}>Olá, {userName || 'Usuário'}!</p>
-                    <p className='text-sm' style={{ color: TARGET_TEXT_COLOR }}>Bem-vindo(a)</p>
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700" align="start" sideOffset={10}>
-                <DropdownMenuLabel style={{ color: TARGET_TEXT_COLOR }} className="dark:text-gray-300 px-2 py-1.5 text-sm font-semibold">Minha Conta</DropdownMenuLabel>
-                <DropdownMenuSeparator className="dark:bg-zinc-700" />
-                <Link href="/dashboard/profile/edit-data" passHref>
-                  <DropdownMenuItem className="cursor-pointer focus:bg-gray-100 dark:focus:bg-zinc-700" style={{ color: TARGET_TEXT_COLOR }}>
-                    <Edit3 className="mr-2 h-4 w-4" style={{ color: TARGET_TEXT_COLOR }} />
-                    <span style={{ color: TARGET_TEXT_COLOR }}>Alterar dados</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/dashboard/profile/change-password" passHref>
-                  <DropdownMenuItem className="cursor-pointer focus:bg-gray-100 dark:focus:bg-zinc-700" style={{ color: TARGET_TEXT_COLOR }}>
-                    <Lock className="mr-2 h-4 w-4" style={{ color: TARGET_TEXT_COLOR }} />
-                    <span style={{ color: TARGET_TEXT_COLOR }}>Alterar senha</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/dashboard/profile/upload-photo" passHref>
-                  <DropdownMenuItem className="cursor-pointer focus:bg-gray-100 dark:focus:bg-zinc-700" style={{ color: TARGET_TEXT_COLOR }}>
-                    <ImagePlus className="mr-2 h-4 w-4" style={{ color: TARGET_TEXT_COLOR }} />
-                    <span style={{ color: TARGET_TEXT_COLOR }}>Alterar foto de perfil</span>
-                  </DropdownMenuItem>
-                </Link>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {isLoggedIn ? (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      className="flex items-center gap-x-3.5 mb-4 px-2 py-2 w-full justify-start hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg text-left h-auto"
+                    >
+                      {userPhotoUrl ? (
+                        <Image 
+                          src={userPhotoUrl || "/user-placeholder.png"}
+                          alt={userName || 'Foto de perfil'}
+                          width={44} 
+                          height={44} 
+                          className="rounded-full object-cover h-11 w-11 shrink-0" 
+                        />
+                      ) : (
+                        <UserCircle className="h-11 w-11 text-gray-500 dark:text-gray-400 shrink-0" />
+                      )}
+                      <div className="flex flex-col">
+                        <p className='text-base font-semibold truncate max-w-[200px]' style={{ color: TARGET_TEXT_COLOR }}>Olá, {userName || 'Usuário'}!</p>
+                        <p className='text-sm' style={{ color: TARGET_TEXT_COLOR }}>Bem-vindo(a)</p>
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-64 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700" align="start" sideOffset={10}>
+                    <DropdownMenuLabel style={{ color: TARGET_TEXT_COLOR }} className="dark:text-gray-300 px-2 py-1.5 text-sm font-semibold">Minha Conta</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="dark:bg-zinc-700" />
+                    <Link href="/dashboard/profile/edit-data" passHref>
+                      <DropdownMenuItem className="cursor-pointer focus:bg-gray-100 dark:focus:bg-zinc-700" style={{ color: TARGET_TEXT_COLOR }}>
+                        <Edit3 className="mr-2 h-4 w-4" style={{ color: TARGET_TEXT_COLOR }} />
+                        <span style={{ color: TARGET_TEXT_COLOR }}>Alterar dados</span>
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/dashboard/profile/change-password" passHref>
+                      <DropdownMenuItem className="cursor-pointer focus:bg-gray-100 dark:focus:bg-zinc-700" style={{ color: TARGET_TEXT_COLOR }}>
+                        <Lock className="mr-2 h-4 w-4" style={{ color: TARGET_TEXT_COLOR }} />
+                        <span style={{ color: TARGET_TEXT_COLOR }}>Alterar senha</span>
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/dashboard/profile/upload-photo" passHref>
+                      <DropdownMenuItem className="cursor-pointer focus:bg-gray-100 dark:focus:bg-zinc-700" style={{ color: TARGET_TEXT_COLOR }}>
+                        <ImagePlus className="mr-2 h-4 w-4" style={{ color: TARGET_TEXT_COLOR }} />
+                        <span style={{ color: TARGET_TEXT_COLOR }}>Alterar foto de perfil</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-            <Button 
-              variant="outline"
-              size="default"
-              onClick={handleLogout} 
-              className="w-full flex items-center justify-center gap-x-2.5 text-red-600 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-900/25 dark:hover:text-red-400 transition-colors duration-150 ease-in-out focus:ring-offset-1 text-base font-medium py-3 border-red-600"
-            >
-              <LogOut className="h-5 w-5 " />
-              <span>Sair</span>
-            </Button>
+                <Button 
+                  variant="outline"
+                  size="default"
+                  onClick={handleLogout} 
+                  className="w-full flex items-center justify-center gap-x-2.5 text-red-600 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-900/25 dark:hover:text-red-400 transition-colors duration-150 ease-in-out focus:ring-offset-1 text-base font-medium py-3 border-red-600"
+                >
+                  <LogOut className="h-5 w-5 " />
+                  <span>Sair</span>
+                </Button>
+              </>
+            ) : (
+              <Button 
+                onClick={() => router.push('/login')}
+                variant="outline"
+                className="w-full flex items-center justify-center gap-x-2.5 px-4 py-3 text-base font-medium border-gray-300 dark:border-zinc-600 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors duration-150 ease-in-out"
+                style={{ color: TARGET_TEXT_COLOR }}
+              >
+                <LogIn size={20} />
+                Entrar
+              </Button>
+            )}
           </div>
         </aside>
 
@@ -428,7 +452,7 @@ export default function MainLayoutClient({ children }: { children: React.ReactNo
           <NavLink 
             key={`mobile-${item.id}`} 
             {...item} 
-            currentPathname={currentPathname}
+            currentPathname={currentPathname ?? ''}
             currentStatusFilter={currentStatusFilter}
             displayMode="mobileBottom"
           />

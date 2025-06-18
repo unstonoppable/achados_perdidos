@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardFooter
 } from '@/components/ui/card';
-import { ArrowLeft, ImageOff, AlertTriangle, Calendar, Clock, MapPin, User, Tag, Edit3, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ImageOff, AlertTriangle, Calendar, Clock, MapPin, User, Tag, Loader2, ShieldCheck } from 'lucide-react';
 import  {useAuth}  from "@/app/(main)/MainLayoutClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ interface ItemDetails {
   data_limite_retirada?: string;
   local_retirada?: string;
   turno_retirada?: string;
+  nome_usuario_encontrou?: string | null;
 }
 
 // Nova interface para usuários buscados
@@ -82,7 +83,7 @@ function debounce<P extends unknown[], R>(func: (...args: P) => R, waitFor: numb
 const ItemDetailPage = () => {
   const router = useRouter();
   const params = useParams();
-  const id = params.id as string;
+  const id = params?.id as string | undefined;
   
   const { userId, isAdmin } = useAuth();
   const [item, setItem] = useState<ItemDetails | null>(null);
@@ -103,9 +104,8 @@ const ItemDetailPage = () => {
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [userSearchError, setUserSearchError] = useState<string | null>(null);
 
+  // HOOKS DEVEM FICAR ANTES DE QUALQUER RETURN CONDICIONAL
   useEffect(() => {
-    if (!id) return;
-
     const fetchItem = async () => {
       setLoading(true);
       setError(null);
@@ -209,6 +209,10 @@ const ItemDetailPage = () => {
     }
   };
 
+  if (!id) {
+    return <div className="flex justify-center items-center h-screen">ID inválido</div>;
+  }
+
   if (loading) {
     return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
@@ -266,9 +270,9 @@ const ItemDetailPage = () => {
             </div>
             {canModify && (
                <div className="flex gap-2">
-                 <Link href={`/dashboard/items/${item.id}/edit`} passHref>
+                 {/* <Link href={`/dashboard/items/${item.id}/edit`} passHref>
                     <Button variant="outline"><Edit3 className="h-4 w-4 mr-2" />Editar</Button>
-                 </Link>
+                 </Link> */}
                </div>
             )}
           </div>
@@ -299,14 +303,52 @@ const ItemDetailPage = () => {
             <div className="flex items-center gap-3"><Calendar className="h-5 w-5 text-muted-foreground" /> <span>Encontrado em: {new Date(item.data_encontrado).toLocaleDateString('pt-BR')}</span></div>
             {item.turno_encontrado && <div className="flex items-center gap-3"><Clock className="h-5 w-5 text-muted-foreground" /> <span>Turno: {item.turno_encontrado}</span></div>}
             {item.categoria && <div className="flex items-center gap-3"><Tag className="h-5 w-5 text-muted-foreground" /> <span>Categoria: {item.categoria}</span></div>}
-            <div className="flex items-center gap-3"><User className="h-5 w-5 text-muted-foreground" /> <span>Cadastrado por: Usuário ID {item.id_usuario_encontrou}</span></div>
-            <div className={`p-2 rounded-md bg-${item.status === 'achado' ? 'green' : 'red'}-100 text-${item.status === 'achado' ? 'green' : 'red'}-700`}>
-              Status: {item.status}
-            </div>
+            <div className="flex items-center gap-3"><User className="h-5 w-5 text-muted-foreground" /> <span>Cadastrado por: {item.nome_usuario_encontrou || 'Desconhecido'}</span></div>
+            {item.status === 'achado' && (
+              <div className="flex items-center gap-3"><MapPin className="h-5 w-5 text-muted-foreground" /> <span>Local de retirada: SISAE</span></div>
+            )}
+            {item.status === 'entregue' && item.nome_pessoa_retirou && (
+              <>
+                <div className="flex items-center gap-3"><User className="h-5 w-5 text-muted-foreground" /> <span>Entregue para: {item.nome_pessoa_retirou}</span></div>
+                <div className="flex items-center gap-3"><MapPin className="h-5 w-5 text-muted-foreground" /> <span>Local de retirada: SISAE</span></div>
+              </>
+            )}
+            {(() => {
+              let bg = 'bg-gray-200';
+              let text = 'text-gray-800';
+              let label = '';
+              switch (item.status) {
+                case 'achado':
+                  bg = 'bg-green-100';
+                  text = 'text-green-700';
+                  label = 'Achado';
+                  break;
+                case 'perdido':
+                  bg = 'bg-red-100';
+                  text = 'text-red-700';
+                  label = 'Perdido';
+                  break;
+                case 'entregue':
+                  bg = 'bg-gray-300';
+                  text = 'text-gray-700';
+                  label = 'Entregue';
+                  break;
+                case 'expirado':
+                  bg = 'bg-gray-300';
+                  text = 'text-gray-700';
+                  label = 'Expirado';
+                  break;
+                default:
+                  label = item.status || 'Desconhecido';
+              }
+              return (
+                <div className={`p-2 rounded-md font-semibold ${bg} ${text}`}>Status: {label}</div>
+              );
+            })()}
           </div>
         </CardContent>
         <CardFooter className="flex justify-end">
-            {canModify && (item.status === 'achado' || item.status === 'reivindicado') && (
+            {isAdmin && (item.status === 'achado' || item.status === 'reivindicado' || item.status === 'perdido') && (
                 <Button 
                     onClick={() => setShowMarkAsDeliveredModal(true)}
                     className="bg-green-600 hover:bg-green-700 text-white"

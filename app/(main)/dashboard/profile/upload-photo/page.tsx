@@ -73,7 +73,7 @@ function UploadPhotoForm() {
             if (responseData.success) {
                 toast.success(responseData.message || "Foto de perfil atualizada!");
                 // Opcional: redirecionar ou atualizar o estado do layout
-                router.push('/dashboard/profile'); 
+                router.push('/dashboard'); 
             } else {
                 toast.error('Falha no upload', { description: responseData.message });
             }

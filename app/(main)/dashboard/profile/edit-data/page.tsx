@@ -11,10 +11,15 @@ import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Mail, Hash, Save } from 'lucide-react';
 import Link from 'next/link';
+
+// Cores IFC
+const IFC_GREEN = "#98EE6F";
+const IFC_GRAY = "#676767";
+const TARGET_TEXT_COLOR = "#3D3D3D";
 
 const formSchema = z.object({
   nome: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
@@ -60,7 +65,7 @@ const EditDataPage = () => {
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event('userDataChanged'));
         }
-        router.push('/dashboard/profile');
+        router.push('/dashboard');
       } else {
         toast.error('Falha ao atualizar', { description: data.message });
       }
@@ -76,18 +81,30 @@ const EditDataPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-start pt-10 min-h-screen bg-gray-100 dark:bg-zinc-950">
-      <Card className="w-full max-w-lg mx-4">
-        <CardHeader>
-          <div className="flex items-center mb-4">
-            <Link href="/dashboard/profile" className="mr-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-800">
-              <ArrowLeft size={24} />
-            </Link>
-            <CardTitle>Editar Dados</CardTitle>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/dashboard" 
+            className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <ArrowLeft size={20} style={{ color: IFC_GRAY }} />
+          </Link>
+          
+        </div>
+      </div>
+
+      <Card className="w-full max-w-md mx-auto border-0 shadow-lg bg-white dark:bg-zinc-800">
+        <CardHeader className="text-center pb-6">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: IFC_GREEN }}>
+              <User size={32} style={{ color: TARGET_TEXT_COLOR }} />
+            </div>
           </div>
-          <CardDescription>Atualize suas informações pessoais.</CardDescription>
+          <CardTitle className="text-2xl font-bold" style={{ color: TARGET_TEXT_COLOR }}>Informações Pessoais</CardTitle>
+          
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-8 pb-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -95,42 +112,93 @@ const EditDataPage = () => {
                 name="nome"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome Completo</FormLabel>
+                    <FormLabel className="text-sm font-semibold" style={{ color: TARGET_TEXT_COLOR }}>
+                      Nome Completo
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="Seu nome completo" {...field} />
+                      <div className="relative">
+                        <Input 
+                          placeholder="Digite seu nome completo"
+                          className="pl-10 h-12 border-gray-300 dark:border-zinc-600 focus:border-green-500 dark:focus:border-green-400"
+                          {...field} 
+                        />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-sm font-semibold" style={{ color: TARGET_TEXT_COLOR }}>
+                      Email
+                    </FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="seu@email.com" {...field} />
+                      <div className="relative">
+                        <Input 
+                          type="email"
+                          placeholder="seu@email.com"
+                          className="pl-10 h-12 border-gray-300 dark:border-zinc-600 focus:border-green-500 dark:focus:border-green-400"
+                          {...field} 
+                        />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="matricula"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Matrícula (Opcional)</FormLabel>
+                    <FormLabel className="text-sm font-semibold" style={{ color: TARGET_TEXT_COLOR }}>
+                      Matrícula
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="Sua matrícula" {...field} />
+                      <div className="relative">
+                        <Input 
+                          placeholder="Digite sua matrícula"
+                          className="pl-10 h-12 border-gray-300 dark:border-zinc-600 focus:border-green-500 dark:focus:border-green-400"
+                          {...field} 
+                        />
+                        <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Salvar Alterações'}
+              
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-300"
+                disabled={isSubmitting}
+                style={{
+                  backgroundColor: IFC_GREEN,
+                  color: TARGET_TEXT_COLOR,
+                  border: 'none',
+                  boxShadow: '0 2px 8px 0 rgba(0,0,0,0.10)',
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-5 w-5" />
+                    Salvar Alterações
+                  </>
+                )}
               </Button>
             </form>
           </Form>
